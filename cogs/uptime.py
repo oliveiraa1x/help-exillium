@@ -8,6 +8,9 @@ class Uptime(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
 
+    def cog_unload(self):
+        self.bot.tree.remove_command(self.uptime.name, type=self.uptime.type)
+
     @app_commands.command(name="uptime", description="Mostra há quanto tempo o bot está online.")
     async def uptime(self, interaction: discord.Interaction):
         now = datetime.datetime.now()
@@ -18,4 +21,6 @@ class Uptime(commands.Cog):
         await interaction.response.send_message(f"⏳ Uptime: **{h}h {m}m {s}s**")
 
 async def setup(bot):
-    await bot.add_cog(Uptime(bot))
+    cog = Uptime(bot)
+    await bot.add_cog(cog)
+    bot.tree.add_command(cog.uptime)

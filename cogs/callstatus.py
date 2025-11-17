@@ -13,6 +13,9 @@ class CallStatus(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
 
+    def cog_unload(self):
+        self.bot.tree.remove_command(self.callstatus.name, type=self.callstatus.type)
+
     @app_commands.command(name="callstatus", description="Mostra seu tempo atual na call.")
     async def callstatus(self, interaction: discord.Interaction):
         user = interaction.user
@@ -28,4 +31,6 @@ class CallStatus(commands.Cog):
         )
 
 async def setup(bot):
-    await bot.add_cog(CallStatus(bot))
+    cog = CallStatus(bot)
+    await bot.add_cog(cog)
+    bot.tree.add_command(cog.callstatus)

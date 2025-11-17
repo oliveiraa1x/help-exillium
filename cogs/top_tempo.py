@@ -12,6 +12,9 @@ class TopTempo(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
 
+    def cog_unload(self):
+        self.bot.tree.remove_command(self.top_tempo.name, type=self.top_tempo.type)
+
     @app_commands.command(name="top-tempo", description="Mostra o ranking de tempo em call.")
     async def top_tempo(self, interaction: discord.Interaction):
         db = self.bot.db()
@@ -35,4 +38,6 @@ class TopTempo(commands.Cog):
         await interaction.response.send_message(embed=embed)
 
 async def setup(bot):
-    await bot.add_cog(TopTempo(bot))
+    cog = TopTempo(bot)
+    await bot.add_cog(cog)
+    bot.tree.add_command(cog.top_tempo)

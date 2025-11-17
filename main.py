@@ -1,12 +1,26 @@
 import datetime
+import importlib
 import json
 import os
-from pathlib import Path
 from itertools import cycle
+from pathlib import Path
 
 import discord
+from discord import app_commands
 from discord.ext import commands, tasks
-from dotenv import load_dotenv
+
+
+def _resolve_load_dotenv():
+    try:
+        return importlib.import_module("dotenv").load_dotenv
+    except ModuleNotFoundError as exc:
+        raise RuntimeError(
+            "Dependência ausente: python-dotenv. "
+            "Instale-a conforme descrito no requirements.txt."
+        ) from exc
+
+
+load_dotenv = _resolve_load_dotenv()
 
 
 # ==============================
@@ -94,13 +108,10 @@ def format_elapsed(delta: datetime.timedelta) -> str:
     return f"{hours:02}:{minutes:02}:{secs:02}"
 
 
-async def load_cogs() -> None:
-    cogs_dir = BASE_DIR / "cogs"
-    if not cogs_dir.exists():
-        return
-
-    for file in cogs_dir.glob("*.py"):
-        await bot.load_extension(f"cogs.{file.stem}")
+def format_time(seconds: int) -> str:
+    hours, remainder = divmod(seconds, 3600)
+    minutes, secs = divmod(remainder, 60)
+    return f"{hours}h {minutes}m {secs}s"
 
 
 def ensure_user_record(user_id: int) -> tuple[dict, str]:
@@ -112,8 +123,123 @@ def ensure_user_record(user_id: int) -> tuple[dict, str]:
     return db, uid
 
 
+@bot.tree.command(name="help", description="Lista os comandos disponíveis do Help Exilium.")
+async def slash_help(interaction: discord.Interaction):
+    embed = discord.Embed(
+        title="📖 Help Exilium",
+        description="Comandos disponíveis:",
+        color=discord.Color.blurple(),
+    )
+    embed.add_field(name="/perfil [membro]", value="Mostra os detalhes do perfil.", inline=False)
+    embed.add_field(name="/mensagem <título> <texto>", value="Cria uma embed simples.", inline=False)
+    embed.add_field(name="/set-sobre <texto>", value="Define seu 'Sobre Mim'.", inline=False)
+    embed.add_field(name="/top-tempo", value="Exibe o ranking de tempo em call.", inline=False)
+    embed.add_field(name="/callstatus", value="Mostra seu tempo atual em call.", inline=False)
+    embed.add_field(name="/uptime", value="Mostra há quanto tempo o bot está online.", inline=False)
+    await interaction.response.send_message(embed=embed, ephemeral=True)
+
+
+@bot.tree.command(name="perfil", description="Mostra um perfil completo do usuário.")
+@app_commands.describe(membro="Membro que terá o perfil exibido")
+async def slash_perfil(interaction: discord.Interaction, membro: discord.Member | None = None):
+    membro = membro or interaction.user
+    db, uid = ensure_user_record(membro.id)
+
+    sobre = db[uid].get("sobre") or "❌ Nenhum Sobre Mim definido ainda."
+    tempo_total = db[uid].get("tempo_total", 0)
+    tempo_total_fmt = format_time(tempo_total)
+
+    if membro.id in bot.active_users:
+        start = bot.call_times.get(membro.id, datetime.datetime.now())
+        elapsed = datetime.datetime.now() - start
+        tempo_atual = format_time(int(elapsed.total_seconds()))
+    else:
+        tempo_atual = "❌ Não está em call"
+
+    embed = discord.Embed(
+        title=f"👤 Perfil de {membro.display_name}",
+        color=discord.Color.red(),
+    )
+    embed.set_thumbnail(url=(membro.avatar.url if membro.avatar else membro.display_avatar.url))
+    embed.add_field(name="📅 Conta criada em:", value=membro.created_at.strftime("%d/%m/%Y"), inline=True)
+    joined_at = membro.joined_at.strftime("%d/%m/%Y") if membro.joined_at else "Desconhecido"
+    embed.add_field(name="📥 Entrou no servidor:", value=joined_at, inline=True)
+    embed.add_field(name="📝 Sobre Mim:", value=sobre, inline=False)
+    embed.add_field(name="🎧 Tempo atual em call:", value=tempo_atual, inline=True)
+    embed.add_field(name="⏲️ Tempo total acumulado:", value=tempo_total_fmt, inline=True)
+
+    try:
+        user = await bot.fetch_user(membro.id)
+        if user.banner:
+            embed.set_image(url=user.banner.url)
+    except discord.HTTPException:
+        pass
+
+    embed.set_footer(text="Aeternum Exilium • Sistema de Perfil")
+    await interaction.response.send_message(embed=embed)
+
+
+@bot.tree.command(name="mensagem", description="Cria mensagens personalizadas.")
+@app_commands.describe(titulo="Título da embed", texto="Texto principal da embed")
+async def slash_mensagem(interaction: discord.Interaction, titulo: str, texto: str):
+    embed = discord.Embed(title=titulo, description=texto, color=discord.Color.blurple())
+    await interaction.response.send_message(embed=embed)
+
+
+@bot.tree.command(name="set-sobre", description="Define o seu 'Sobre Mim'.")
+@app_commands.describe(texto="Conteúdo do seu Sobre Mim")
+async def slash_set_sobre(interaction: discord.Interaction, texto: str):
+    db, uid = ensure_user_record(interaction.user.id)
+    db[uid]["sobre"] = texto
+    bot.save_db(db)
+    await interaction.response.send_message("✅ Sobre Mim atualizado!")
+
+
+@bot.tree.command(name="top-tempo", description="Mostra o ranking de tempo em call.")
+async def slash_top_tempo(interaction: discord.Interaction):
+    db = bot.db()
+    ranking = sorted(
+        ((uid, data.get("tempo_total", 0)) for uid, data in db.items()),
+        key=lambda item: item[1],
+        reverse=True,
+    )[:10]
+
+    embed = discord.Embed(title="🏆 Top 10 — Tempo em Call", color=discord.Color.gold())
+    if not ranking:
+        embed.description = "Ainda não há registros."
+    else:
+        for pos, (uid, seconds) in enumerate(ranking, start=1):
+            member = interaction.guild.get_member(int(uid)) if interaction.guild else None
+            nome = member.display_name if member else f"Usuário {uid}"
+            embed.add_field(name=f"{pos}. {nome}", value=format_time(seconds), inline=False)
+
+    await interaction.response.send_message(embed=embed)
+
+
+@bot.tree.command(name="callstatus", description="Mostra seu tempo atual na call.")
+async def slash_callstatus(interaction: discord.Interaction):
+    user = interaction.user
+    if user.id not in bot.active_users:
+        await interaction.response.send_message("❌ Você não está em call.", ephemeral=True)
+        return
+
+    start = bot.call_times.get(user.id, datetime.datetime.now())
+    elapsed = int((datetime.datetime.now() - start).total_seconds())
+    await interaction.response.send_message(f"🎧 Você está há **{format_time(elapsed)}** na call.")
+
+
+@bot.tree.command(name="uptime", description="Mostra há quanto tempo o bot está online.")
+async def slash_uptime(interaction: discord.Interaction):
+    diff = datetime.datetime.now() - bot.start_time
+    hours, remainder = divmod(int(diff.total_seconds()), 3600)
+    minutes, seconds = divmod(remainder, 60)
+    await interaction.response.send_message(f"⏳ Uptime: **{hours}h {minutes}m {seconds}s**")
+
+
 @tasks.loop(seconds=10)
 async def update_status():
+    if not bot.is_ready():
+        return
     base_status = next(status_cycle)
 
     if bot.active_users:
@@ -156,9 +282,13 @@ async def on_voice_state_update(member, before, after):
 
 @bot.event
 async def setup_hook():
-    await load_cogs()
     update_status.start()
     await bot.tree.sync()
+
+
+@update_status.before_loop
+async def before_update_status():
+    await bot.wait_until_ready()
 
 
 @bot.event

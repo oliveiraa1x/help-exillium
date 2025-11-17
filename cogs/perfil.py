@@ -13,6 +13,9 @@ class Perfil(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
 
+    def cog_unload(self):
+        self.bot.tree.remove_command(self.perfil.name, type=self.perfil.type)
+
     @app_commands.command(name="perfil", description="Mostra um perfil bonito e completo do usuário.")
     async def perfil(self, interaction: discord.Interaction, membro: discord.Member = None):
         membro = membro or interaction.user
@@ -99,5 +102,7 @@ class Perfil(commands.Cog):
         await interaction.response.send_message(embed=embed)
 
 async def setup(bot):
-    await bot.add_cog(Perfil(bot))
+    cog = Perfil(bot)
+    await bot.add_cog(cog)
+    bot.tree.add_command(cog.perfil)
 

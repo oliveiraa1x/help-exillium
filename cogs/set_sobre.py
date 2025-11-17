@@ -7,6 +7,9 @@ class SetSobre(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
 
+    def cog_unload(self):
+        self.bot.tree.remove_command(self.set_sobre.name, type=self.set_sobre.type)
+
     @app_commands.command(name="set-sobre", description="Define seu Sobre Mim.")
     async def set_sobre(self, interaction: discord.Interaction, texto: str):
         db = self.bot.db()
@@ -21,4 +24,6 @@ class SetSobre(commands.Cog):
         await interaction.response.send_message(f"✅ Sobre Mim atualizado!")
 
 async def setup(bot):
-    await bot.add_cog(SetSobre(bot))
+    cog = SetSobre(bot)
+    await bot.add_cog(cog)
+    bot.tree.add_command(cog.set_sobre)
