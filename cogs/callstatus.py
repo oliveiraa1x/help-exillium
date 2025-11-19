@@ -21,14 +21,37 @@ class CallStatus(commands.Cog):
         user = interaction.user
 
         if user.id not in self.bot.active_users:
-            return await interaction.response.send_message("❌ Você não está em call.")
+            embed = discord.Embed(
+                title="❌ Não está em call",
+                description="Você precisa estar em uma call de voz para usar este comando.",
+                color=discord.Color.red()
+            )
+            embed.set_thumbnail(url=(user.avatar.url if user.avatar else user.display_avatar.url))
+            embed.set_footer(text="Aeternum Exilium • Sistema de Call Status")
+            return await interaction.response.send_message(embed=embed, ephemeral=True)
 
         start = self.bot.call_times.get(user.id, datetime.datetime.now())
         elapsed = int((datetime.datetime.now() - start).total_seconds())
+        tempo_formatado = format_time(elapsed)
 
-        await interaction.response.send_message(
-            f"🎧 Você está há **{format_time(elapsed)}** na call."
+        embed = discord.Embed(
+            title="🎧 Status da Call",
+            description=f"**{user.mention}** está em call!",
+            color=discord.Color.blue()
         )
+        
+        embed.set_thumbnail(url=(user.avatar.url if user.avatar else user.display_avatar.url))
+        
+        embed.add_field(
+            name="⏱️ Tempo na call:",
+            value=f"**{tempo_formatado}**",
+            inline=False
+        )
+        
+        embed.set_footer(text="Aeternum Exilium • Sistema de Call Status")
+        embed.timestamp = datetime.datetime.now()
+
+        await interaction.response.send_message(embed=embed)
 
 async def setup(bot):
     cog = CallStatus(bot)

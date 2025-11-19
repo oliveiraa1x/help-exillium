@@ -198,8 +198,29 @@ async def slash_set_sobre(interaction: discord.Interaction, texto: str):
 @bot.tree.command(name="top-tempo", description="Mostra o ranking de tempo em call.")
 async def slash_top_tempo(interaction: discord.Interaction):
     db = bot.db()
+    
+    # Filtrar apenas membros reais (não bots)
+    ranking_items = []
+    for uid, data in db.items():
+        try:
+            user_id = int(uid)
+            # Tenta buscar o membro no servidor
+            member = interaction.guild.get_member(user_id) if interaction.guild else None
+            if member:
+                # Se encontrou o membro, verifica se não é bot
+                if not member.bot:
+                    ranking_items.append((uid, data.get("tempo_total", 0)))
+            else:
+                # Se não encontrou no servidor, tenta buscar o usuário globalmente
+                user = await bot.fetch_user(user_id)
+                if not user.bot:
+                    ranking_items.append((uid, data.get("tempo_total", 0)))
+        except (ValueError, discord.NotFound, discord.HTTPException):
+            # Se não conseguir buscar, pula este usuário
+            continue
+
     ranking = sorted(
-        ((uid, data.get("tempo_total", 0)) for uid, data in db.items()),
+        ranking_items,
         key=lambda item: item[1],
         reverse=True,
     )[:10]
@@ -210,7 +231,14 @@ async def slash_top_tempo(interaction: discord.Interaction):
     else:
         for pos, (uid, seconds) in enumerate(ranking, start=1):
             member = interaction.guild.get_member(int(uid)) if interaction.guild else None
-            nome = member.display_name if member else f"Usuário {uid}"
+            if member:
+                nome = member.display_name
+            else:
+                try:
+                    user = await bot.fetch_user(int(uid))
+                    nome = user.name
+                except:
+                    nome = f"Usuário {uid}"
             embed.add_field(name=f"{pos}. {nome}", value=format_time(seconds), inline=False)
 
     await interaction.response.send_message(embed=embed)
@@ -220,12 +248,38 @@ async def slash_top_tempo(interaction: discord.Interaction):
 async def slash_callstatus(interaction: discord.Interaction):
     user = interaction.user
     if user.id not in bot.active_users:
-        await interaction.response.send_message("❌ Você não está em call.", ephemeral=True)
+        embed = discord.Embed(
+            title="❌ Não está em call",
+            description="Você precisa estar em uma call de voz para usar este comando.",
+            color=discord.Color.red()
+        )
+        embed.set_thumbnail(url=(user.avatar.url if user.avatar else user.display_avatar.url))
+        embed.set_footer(text="Aeternum Exilium • Sistema de Call Status")
+        await interaction.response.send_message(embed=embed, ephemeral=True)
         return
 
     start = bot.call_times.get(user.id, datetime.datetime.now())
     elapsed = int((datetime.datetime.now() - start).total_seconds())
-    await interaction.response.send_message(f"🎧 Você está há **{format_time(elapsed)}** na call.")
+    tempo_formatado = format_time(elapsed)
+
+    embed = discord.Embed(
+        title="🎧 Status da Call",
+        description=f"**{user.mention}** está em call!",
+        color=discord.Color.blue()
+    )
+    
+    embed.set_thumbnail(url=(user.avatar.url if user.avatar else user.display_avatar.url))
+    
+    embed.add_field(
+        name="⏱️ Tempo na call:",
+        value=f"**{tempo_formatado}**",
+        inline=False
+    )
+    
+    embed.set_footer(text="Aeternum Exilium • Sistema de Call Status")
+    embed.timestamp = datetime.datetime.now()
+
+    await interaction.response.send_message(embed=embed)
 
 
 @bot.tree.command(name="uptime", description="Mostra há quanto tempo o bot está online.")
@@ -233,7 +287,32 @@ async def slash_uptime(interaction: discord.Interaction):
     diff = datetime.datetime.now() - bot.start_time
     hours, remainder = divmod(int(diff.total_seconds()), 3600)
     minutes, seconds = divmod(remainder, 60)
-    await interaction.response.send_message(f"⏳ Uptime: **{hours}h {minutes}m {seconds}s**")
+    tempo_formatado = f"{hours}h {minutes}m {seconds}s"
+
+    embed = discord.Embed(
+        title="⏳ Uptime do Bot",
+        description=f"**{bot.user.name}** está online!",
+        color=discord.Color.green()
+    )
+    
+    embed.set_thumbnail(url=(bot.user.avatar.url if bot.user.avatar else bot.user.display_avatar.url))
+    
+    embed.add_field(
+        name="🕐 Tempo online:",
+        value=f"**{tempo_formatado}**",
+        inline=False
+    )
+    
+    embed.add_field(
+        name="📅 Iniciado em:",
+        value=f"<t:{int(bot.start_time.timestamp())}:F>",
+        inline=False
+    )
+    
+    embed.set_footer(text="Aeternum Exilium • Sistema de Uptime")
+    embed.timestamp = datetime.datetime.now()
+
+    await interaction.response.send_message(embed=embed)
 
 
 @tasks.loop(seconds=10)

@@ -19,8 +19,28 @@ class TopTempo(commands.Cog):
     async def top_tempo(self, interaction: discord.Interaction):
         db = self.bot.db()
 
+        # Filtrar apenas membros reais (não bots)
+        ranking_items = []
+        for uid, data in db.items():
+            try:
+                user_id = int(uid)
+                # Tenta buscar o membro no servidor
+                member = interaction.guild.get_member(user_id) if interaction.guild else None
+                if member:
+                    # Se encontrou o membro, verifica se não é bot
+                    if not member.bot:
+                        ranking_items.append((uid, data.get("tempo_total", 0)))
+                else:
+                    # Se não encontrou no servidor, tenta buscar o usuário globalmente
+                    user = await self.bot.fetch_user(user_id)
+                    if not user.bot:
+                        ranking_items.append((uid, data.get("tempo_total", 0)))
+            except (ValueError, discord.NotFound, discord.HTTPException):
+                # Se não conseguir buscar, pula este usuário
+                continue
+
         ranking = sorted(
-            [(uid, data.get("tempo_total", 0)) for uid, data in db.items()],
+            ranking_items,
             key=lambda x: x[1],
             reverse=True
         )[:10]
@@ -30,10 +50,21 @@ class TopTempo(commands.Cog):
             color=discord.Color.gold()
         )
 
-        for pos, (uid, sec) in enumerate(ranking, start=1):
-            user = interaction.guild.get_member(int(uid))
-            nome = user.display_name if user else "Usuário desconhecido"
-            embed.add_field(name=f"{pos}. {nome}", value=format_time(sec), inline=False)
+        if not ranking:
+            embed.description = "Ainda não há registros."
+        else:
+            for pos, (uid, sec) in enumerate(ranking, start=1):
+                user = interaction.guild.get_member(int(uid)) if interaction.guild else None
+                if not user:
+                    try:
+                        user = await self.bot.fetch_user(int(uid))
+                    except:
+                        nome = f"Usuário {uid}"
+                    else:
+                        nome = user.display_name if hasattr(user, 'display_name') else user.name
+                else:
+                    nome = user.display_name
+                embed.add_field(name=f"{pos}. {nome}", value=format_time(sec), inline=False)
 
         await interaction.response.send_message(embed=embed)
 

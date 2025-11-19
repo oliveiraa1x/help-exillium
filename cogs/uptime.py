@@ -17,8 +17,32 @@ class Uptime(commands.Cog):
         diff = now - self.bot.start_time
         h, r = divmod(int(diff.total_seconds()), 3600)
         m, s = divmod(r, 60)
+        tempo_formatado = f"{h}h {m}m {s}s"
 
-        await interaction.response.send_message(f"⏳ Uptime: **{h}h {m}m {s}s**")
+        embed = discord.Embed(
+            title="⏳ Uptime do Bot",
+            description=f"**{self.bot.user.name}** está online!",
+            color=discord.Color.green()
+        )
+        
+        embed.set_thumbnail(url=(self.bot.user.avatar.url if self.bot.user.avatar else self.bot.user.display_avatar.url))
+        
+        embed.add_field(
+            name="🕐 Tempo online:",
+            value=f"**{tempo_formatado}**",
+            inline=False
+        )
+        
+        embed.add_field(
+            name="📅 Iniciado em:",
+            value=f"<t:{int(self.bot.start_time.timestamp())}:F>",
+            inline=False
+        )
+        
+        embed.set_footer(text="Aeternum Exilium • Sistema de Uptime")
+        embed.timestamp = datetime.datetime.now()
+
+        await interaction.response.send_message(embed=embed)
 
 async def setup(bot):
     cog = Uptime(bot)
