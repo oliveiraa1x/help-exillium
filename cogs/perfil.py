@@ -16,6 +16,56 @@ class Perfil(commands.Cog):
     def cog_unload(self):
         self.bot.tree.remove_command(self.perfil.name, type=self.perfil.type)
 
+    async def get_user_rank(self, db: dict, user_id: str, category: str, interaction: discord.Interaction):
+        """Calcula o ranking do usuário em uma categoria específica"""
+        ranking_items = []
+        checked_users = {}  # Cache de usuários já verificados
+        
+        for uid, data in db.items():
+            try:
+                uid_int = int(uid)
+                is_bot = None
+                
+                # Verificar cache primeiro
+                if uid in checked_users:
+                    is_bot = checked_users[uid]
+                else:
+                    member = interaction.guild.get_member(uid_int) if interaction.guild else None
+                    if member:
+                        is_bot = member.bot
+                        checked_users[uid] = is_bot
+                    else:
+                        try:
+                            user = await self.bot.fetch_user(uid_int)
+                            is_bot = user.bot
+                            checked_users[uid] = is_bot
+                        except:
+                            checked_users[uid] = True  # Marcar como bot se não conseguir buscar
+                            continue
+                
+                if not is_bot:
+                    if category == "call":
+                        value = data.get("tempo_total", 0)
+                    elif category == "souls":
+                        value = data.get("soul", 0)
+                    elif category == "xp":
+                        value = data.get("xp", 0)
+                    else:
+                        continue
+                    ranking_items.append((uid, value))
+            except (ValueError, discord.NotFound, discord.HTTPException):
+                continue
+        
+        # Ordenar por valor (maior primeiro)
+        ranking_items.sort(key=lambda x: x[1], reverse=True)
+        
+        # Encontrar posição do usuário
+        for pos, (uid, _) in enumerate(ranking_items, start=1):
+            if uid == user_id:
+                return pos
+        
+        return None
+
     @app_commands.command(name="perfil", description="Mostra um perfil bonito e completo do usuário.")
     async def perfil(self, interaction: discord.Interaction, membro: discord.Member = None):
         membro = membro or interaction.user
@@ -27,7 +77,10 @@ class Perfil(commands.Cog):
         if user_id not in db:
             db[user_id] = {
                 "sobre": None,
-                "tempo_total": 0
+                "tempo_total": 0,
+                "soul": 0,
+                "xp": 0,
+                "level": 1
             }
             self.bot.save_db(db)
 
@@ -46,14 +99,23 @@ class Perfil(commands.Cog):
         else:
             tempo_atual = "❌ Não está em call"
 
+        # ECONOMIA
+        souls = db[user_id].get("soul", 0)
+        xp = db[user_id].get("xp", 0)
+        level = db[user_id].get("level", 1)
+
+        # Calcular rankings
+        rank_call = await self.get_user_rank(db, user_id, "call", interaction)
+        rank_souls = await self.get_user_rank(db, user_id, "souls", interaction)
+        rank_xp = await self.get_user_rank(db, user_id, "xp", interaction)
+
         # EMBED
         embed = discord.Embed(
-            title=f"👤 Perfil de {membro.name}",
+            title=f"👤 Perfil de {membro.display_name}",
             color=discord.Color.red()
         )
 
         # Avatar
-        avatar_url = getattr(membro, "avatar", None)
         embed.set_thumbnail(url=(membro.avatar.url if membro.avatar else membro.display_avatar.url))
 
         # Datas da conta
@@ -69,6 +131,12 @@ class Perfil(commands.Cog):
             inline=True
         )
 
+        embed.add_field(
+            name="\u200b",
+            value="\u200b",
+            inline=True
+        )
+
         # SOBRE MIM
         embed.add_field(
             name="📝 Sobre Mim:",
@@ -77,15 +145,26 @@ class Perfil(commands.Cog):
         )
 
         # TEMPO EM CALL
+        rank_call_text = f"🏆 **#{rank_call}**" if rank_call else "❌ Sem ranking"
         embed.add_field(
-            name="🎧 Tempo atual em call:",
-            value=tempo_atual,
+            name="🎧 Tempo em Call",
+            value=f"**Atual:** {tempo_atual}\n**Total:** {tempo_total_fmt}\n**Rank:** {rank_call_text}",
             inline=True
         )
 
+        # ECONOMIA - Souls com ranking
+        rank_souls_text = f"🏆 **#{rank_souls}**" if rank_souls else "❌ Sem ranking"
         embed.add_field(
-            name="⏲️ Tempo total acumulado:",
-            value=tempo_total_fmt,
+            name="💎 Souls",
+            value=f"**{souls:,}** 💎\n**Rank:** {rank_souls_text}",
+            inline=True
+        )
+
+        # XP e Level com ranking
+        rank_xp_text = f"🏆 **#{rank_xp}**" if rank_xp else "❌ Sem ranking"
+        embed.add_field(
+            name="⭐ Nível & XP",
+            value=f"**Nível {level}**\n**{xp:,}** XP\n**Rank XP:** {rank_xp_text}",
             inline=True
         )
 

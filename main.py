@@ -2,6 +2,7 @@ import datetime
 import importlib
 import json
 import os
+import random
 from itertools import cycle
 from pathlib import Path
 
@@ -118,7 +119,40 @@ def ensure_user_record(user_id: int) -> tuple[dict, str]:
     uid = str(user_id)
     db = bot.db()
     if uid not in db:
-        db[uid] = {"sobre": None, "tempo_total": 0}
+        db[uid] = {
+            "sobre": None,
+            "tempo_total": 0,
+            "soul": 0,
+            "xp": 0,
+            "level": 1,
+            "last_daily": None,
+            "last_mine": None,
+            "mine_streak": 0,
+            "last_caca": None,
+            "caca_streak": 0,
+            "caca_longa_ativa": None,
+            "missoes": [],
+            "missoes_completas": []
+        }
+        bot.save_db(db)
+    else:
+        # Garantir que campos novos existam para usuários antigos
+        defaults = {
+            "soul": 0,
+            "xp": 0,
+            "level": 1,
+            "last_daily": None,
+            "last_mine": None,
+            "mine_streak": 0,
+            "last_caca": None,
+            "caca_streak": 0,
+            "caca_longa_ativa": None,
+            "missoes": [],
+            "missoes_completas": []
+        }
+        for key, value in defaults.items():
+            if key not in db[uid]:
+                db[uid][key] = value
         bot.save_db(db)
     return db, uid
 
@@ -130,12 +164,13 @@ async def slash_help(interaction: discord.Interaction):
         description="Comandos disponíveis:",
         color=discord.Color.blurple(),
     )
-    embed.add_field(name="/perfil [membro]", value="Mostra os detalhes do perfil.", inline=False)
-    embed.add_field(name="/mensagem <título> <texto>", value="Cria uma embed simples.", inline=False)
-    embed.add_field(name="/set-sobre <texto>", value="Define seu 'Sobre Mim'.", inline=False)
-    embed.add_field(name="/top-tempo", value="Exibe o ranking de tempo em call.", inline=False)
-    embed.add_field(name="/callstatus", value="Mostra seu tempo atual em call.", inline=False)
-    embed.add_field(name="/uptime", value="Mostra há quanto tempo o bot está online.", inline=False)
+    embed.add_field(name="👤 Perfil", value="/perfil [membro] - Mostra os detalhes do perfil", inline=False)
+    embed.add_field(name="💬 Mensagens", value="/mensagem <título> <texto> - Cria uma embed simples", inline=False)
+    embed.add_field(name="📝 Sobre Mim", value="/set-sobre <texto> - Define seu 'Sobre Mim'", inline=False)
+    embed.add_field(name="🎧 Call", value="/top-tempo - Ranking de tempo em call\n/callstatus - Seu tempo atual em call", inline=False)
+    embed.add_field(name="💰 Economia", value="/daily - Recompensa diária\n/mine - Minerar e ganhar souls\n/caça - Caça rápida (5s)\n/caça-longa - Caça longa (12h)\n/balance [membro] - Ver saldo de souls\n/top-souls - Ranking de souls\n/top-level - Ranking de níveis", inline=False)
+    embed.add_field(name="📋 Missões", value="/missoes - Ver suas missões\n/claim-missao <número> - Reivindicar recompensa", inline=False)
+    embed.add_field(name="ℹ️ Info", value="/uptime - Tempo online do bot", inline=False)
     await interaction.response.send_message(embed=embed, ephemeral=True)
 
 
@@ -334,6 +369,69 @@ async def update_status():
 
 
 @bot.event
+async def on_message(message):
+    # Ignorar mensagens de bots
+    if message.author.bot:
+        return
+    
+    # Ignorar comandos
+    if message.content.startswith(bot.command_prefix):
+        return
+    
+    # Ganhar XP por mensagem
+    db, uid = ensure_user_record(message.author.id)
+    
+    # Cooldown de XP por mensagem (30 segundos)
+    last_message_xp = db[uid].get("last_message_xp")
+    now = datetime.datetime.now()
+    
+    if not last_message_xp or (now - datetime.datetime.fromisoformat(last_message_xp)).total_seconds() >= 30:
+        # Ganhar XP aleatória (1-5 XP)
+        xp_gain = random.randint(1, 5)
+        
+        # Calcular nível antigo
+        old_xp = db[uid].get("xp", 0)
+        old_level = calculate_level_from_xp(old_xp)
+        
+        # Adicionar XP
+        db[uid]["xp"] = old_xp + xp_gain
+        db[uid]["last_message_xp"] = now.isoformat()
+        
+        # Calcular novo nível
+        new_level = calculate_level_from_xp(db[uid]["xp"])
+        db[uid]["level"] = new_level
+        
+        # Atualizar progresso de missões
+        update_missao_progresso(db, uid, "mensagens", 1)
+        
+        bot.save_db(db)
+    
+    await bot.process_commands(message)
+
+
+def calculate_level_from_xp(xp: int) -> int:
+    """Calcula o nível baseado na XP"""
+    level = 1
+    required_xp = 100
+    current_xp = xp
+    
+    while current_xp >= required_xp:
+        current_xp -= required_xp
+        level += 1
+        required_xp = int(required_xp * 1.5)
+    
+    return level
+
+
+def update_missao_progresso(db: dict, uid: str, tipo: str, quantidade: int = 1):
+    """Atualiza o progresso de missões"""
+    missoes = db[uid].get("missoes", [])
+    for missao in missoes:
+        if missao.get("tipo") == tipo:
+            missao["progresso"] = missao.get("progresso", 0) + quantidade
+
+
+@bot.event
 async def on_voice_state_update(member, before, after):
     joined_channel = after.channel and not before.channel
     left_channel = before.channel and not after.channel
@@ -356,11 +454,19 @@ async def on_voice_state_update(member, before, after):
 
         db, uid = ensure_user_record(member.id)
         db[uid]["tempo_total"] = db[uid].get("tempo_total", 0) + elapsed
+        
+        # Atualizar progresso de missão de call
+        update_missao_progresso(db, uid, "call", elapsed)
+        
         bot.save_db(db)
 
 
 @bot.event
 async def setup_hook():
+    # Carregar cogs
+    from cogs import economia
+    await economia.setup(bot)
+    
     update_status.start()
     await bot.tree.sync()
 
