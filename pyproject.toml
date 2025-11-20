@@ -7,7 +7,7 @@ name = "help-exilium"
 version = "0.1.0"
 description = "Bot Discord do Exilium"
 readme = "README.md"
-requires-python = ">=3.10"
+requires-python = ">=3.10,<3.13"
 dependencies = [
     "discord.py==2.3.2",
     "python-dotenv==1.0.1",
