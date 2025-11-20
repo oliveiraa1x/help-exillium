@@ -4,5 +4,5 @@
     "main": "main.py",
     "language": "python",
     "start": "python3 main.py"
-    "runtime": "python3.11"
+    "runtime": "python3.10"
 }
