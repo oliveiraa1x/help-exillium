@@ -847,13 +847,4 @@ class Economia(commands.Cog):
 async def setup(bot):
     cog = Economia(bot)
     await bot.add_cog(cog)
-    bot.tree.add_command(cog.daily)
-    bot.tree.add_command(cog.mine)
-    bot.tree.add_command(cog.caca)
-    bot.tree.add_command(cog.caca_longa)
-    bot.tree.add_command(cog.balance)
-    bot.tree.add_command(cog.top_souls)
-    bot.tree.add_command(cog.top_level)
-    bot.tree.add_command(cog.missoes)
-    bot.tree.add_command(cog.claim_missao)
 
