@@ -45,7 +45,7 @@ def get_xp_for_next_level(level: int) -> int:
 class Economia(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
-        self.mine_cooldown = 60  # 60 segundos entre minerações
+        self.mine_cooldown = 300  # 5 minutos (300 segundos) entre minerações
         self.daily_cooldown = 86400  # 24 horas
         self.caca_cooldown = 120  # 2 minutos entre caças rápidas
         self.caca_longa_duration = 43200  # 12 horas em segundos
@@ -103,9 +103,7 @@ class Economia(commands.Cog):
         new_level = calculate_level(db[uid]["xp"])
         db[uid]["level"] = new_level
         
-        self.bot.save_db(db)
-        
-        # Retorna se subiu de nível
+        # Retorna se subiu de nível (sem salvar aqui - deixe para o comando)
         return new_level > old_level, new_level
 
     def add_soul(self, user_id: int, amount: int):
@@ -113,7 +111,7 @@ class Economia(commands.Cog):
         uid = self.ensure_user(user_id)
         db = self.bot.db()
         db[uid]["soul"] = db[uid].get("soul", 0) + amount
-        self.bot.save_db(db)
+        # Não salva aqui - deixe para o comando fazer save_db() uma única vez
     
     def update_missao_progresso(self, db: dict, uid: str, tipo: str, quantidade: int = 1):
         """Atualiza o progresso de missões"""
@@ -169,7 +167,8 @@ class Economia(commands.Cog):
         self.add_soul(interaction.user.id, bonus_souls)
         leveled_up, new_level = self.add_xp(interaction.user.id, bonus_xp)
         
-        # Atualizar last_daily e streak
+        # Recarregar DB e atualizar last_daily e streak
+        db = self.bot.db()
         db[uid]["last_daily"] = now.isoformat()
         db[uid]["daily_streak"] = streak
         
@@ -609,8 +608,8 @@ class Economia(commands.Cog):
             description=f"**{interaction.user.mention}** entrou na floresta escura em busca de almas...",
             color=discord.Color.dark_green()
         )
-        # Imagem de floresta escura
-        embed_inicio.set_image(url="https://images.unsplash.com/photo-1511497584788-876760111969?w=800&q=80")
+        # Imagem de floresta escura à noite com luz da lua
+        embed_inicio.set_image(url="https://i.pinimg.com/736x/15/29/ab/1529abc5be2e4c2a4392ef693503b7db.jpg")
         await interaction.response.send_message(embed=embed_inicio)
         
         # Aguardar 5 segundos
@@ -644,7 +643,8 @@ class Economia(commands.Cog):
         self.add_soul(interaction.user.id, bonus_souls)
         leveled_up, new_level = self.add_xp(interaction.user.id, bonus_xp)
         
-        # Atualizar last_caca e streak
+        # Recarregar DB e atualizar last_caca e streak
+        db = self.bot.db()
         db[uid]["last_caca"] = now.isoformat()
         db[uid]["caca_streak"] = streak
         self.bot.save_db(db)
@@ -699,7 +699,7 @@ class Economia(commands.Cog):
                               f"Tempo restante: **{horas}h {minutos}m {segundos}s**",
                     color=discord.Color.blue()
                 )
-                embed.set_image(url="https://images.unsplash.com/photo-1511497584788-876760111969?w=800&q=80")
+                embed.set_image(url="https://i.pinimg.com/736x/15/29/ab/1529abc5be2e4c2a4392ef693503b7db.jpg")
                 await interaction.response.send_message(embed=embed, ephemeral=True)
                 return
             else:
@@ -725,7 +725,7 @@ class Economia(commands.Cog):
                        f"📬 Você receberá uma notificação quando a caçada terminar!",
             color=discord.Color.dark_green()
         )
-        embed.set_image(url="https://i.imgur.com/8K3mQ2x.png")
+        embed.set_image(url="https://i.pinimg.com/736x/15/29/ab/1529abc5be2e4c2a4392ef693503b7db.jpg")
         embed.add_field(
             name="⏳ Tempo estimado",
             value=f"Termina em: <t:{int(fim_caca.timestamp())}:R>",
@@ -769,7 +769,8 @@ class Economia(commands.Cog):
         self.add_soul(user_id, bonus_souls)
         leveled_up, new_level = self.add_xp(user_id, bonus_xp)
         
-        # Remover caça longa ativa
+        # Recarregar DB e remover caça longa ativa
+        db = self.bot.db()
         del db[uid]["caca_longa_ativa"]
         self.bot.save_db(db)
         
@@ -792,7 +793,7 @@ class Economia(commands.Cog):
                 inline=False
             )
         
-        embed.set_image(url="https://i.imgur.com/8K3mQ2x.png")
+        embed.set_image(url="https://i.pinimg.com/736x/15/29/ab/1529abc5be2e4c2a4392ef693503b7db.jpg")
         embed.set_footer(text="Aeternum Exilium • Sistema de Caça Longa")
         
         # Tentar enviar mensagem no canal
