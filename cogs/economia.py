@@ -103,7 +103,9 @@ class Economia(commands.Cog):
         new_level = calculate_level(db[uid]["xp"])
         db[uid]["level"] = new_level
         
-        # Retorna se subiu de nível (sem salvar aqui - deixe para o comando)
+        self.bot.save_db(db)
+        
+        # Retorna se subiu de nível
         return new_level > old_level, new_level
 
     def add_soul(self, user_id: int, amount: int):
@@ -111,7 +113,7 @@ class Economia(commands.Cog):
         uid = self.ensure_user(user_id)
         db = self.bot.db()
         db[uid]["soul"] = db[uid].get("soul", 0) + amount
-        # Não salva aqui - deixe para o comando fazer save_db() uma única vez
+        self.bot.save_db(db)
     
     def update_missao_progresso(self, db: dict, uid: str, tipo: str, quantidade: int = 1):
         """Atualiza o progresso de missões"""
@@ -247,7 +249,8 @@ class Economia(commands.Cog):
         self.add_soul(interaction.user.id, bonus_souls)
         leveled_up, new_level = self.add_xp(interaction.user.id, bonus_xp)
         
-        # Atualizar last_mine e streak
+        # Recarregar DB e atualizar last_mine e streak
+        db = self.bot.db()
         db[uid]["last_mine"] = now.isoformat()
         db[uid]["mine_streak"] = streak
         
