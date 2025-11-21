@@ -84,8 +84,18 @@ TOKEN = resolve_token()
 # Cria o BOT e variáveis globais
 # ==============================
 intents = discord.Intents.all()
-bot = commands.Bot(command_prefix=".", intents=intents)
+# Usar o prefixo do servidor conforme pedido: "sprt!"
+bot = commands.Bot(command_prefix="sprt!", intents=intents)
 bot.start_time = datetime.datetime.now()
+
+# Remove default help command so custom `sprt!help` can be registered without collision
+try:
+    bot.remove_command('help')
+except Exception:
+    pass
+
+# Track last presence to avoid unnecessary change_presence calls
+bot._last_presence: str | None = None
 
 bot.call_times: dict[int, datetime.datetime] = {}
 bot.active_users: set[int] = set()
@@ -350,7 +360,7 @@ async def slash_uptime(interaction: discord.Interaction):
     await interaction.response.send_message(embed=embed)
 
 
-@tasks.loop(seconds=10)
+@tasks.loop(seconds=60)
 async def update_status():
     if not bot.is_ready():
         return
@@ -360,12 +370,23 @@ async def update_status():
         user_id = next(iter(bot.active_users))
         start = bot.call_times.get(user_id, datetime.datetime.now())
         tempo = format_elapsed(datetime.datetime.now() - start)
-        await bot.change_presence(
-            activity=discord.Game(name=f"{base_status} | {tempo} em call")
-        )
+        desired = f"{base_status} | {tempo} em call"
+        if getattr(bot, '_last_presence', None) != desired:
+            try:
+                await bot.change_presence(activity=discord.Game(name=desired))
+                bot._last_presence = desired
+            except Exception:
+                # Ignore errors (rate limits will be handled by Discord library)
+                pass
         return
 
-    await bot.change_presence(activity=discord.Game(name=base_status))
+    desired = base_status
+    if getattr(bot, '_last_presence', None) != desired:
+        try:
+            await bot.change_presence(activity=discord.Game(name=base_status))
+            bot._last_presence = desired
+        except Exception:
+            pass
 
 
 @bot.event
@@ -374,9 +395,8 @@ async def on_message(message):
     if message.author.bot:
         return
     
-    # Ignorar comandos
-    if message.content.startswith(bot.command_prefix):
-        return
+    # Não ignorar mensagens que começam com o prefixo — deixamos o processamento
+    # de comandos para `bot.process_commands(message)` abaixo.
     
     # Ganhar XP por mensagem
     db, uid = ensure_user_record(message.author.id)
@@ -463,10 +483,20 @@ async def on_voice_state_update(member, before, after):
 
 @bot.event
 async def setup_hook():
-    # Carregar cogs
-    from cogs import economia
-    await economia.setup(bot)
-    
+    # Carregar cogs (import dinâmico para evitar problemas de importação)
+    import importlib
+    try:
+        economia = importlib.import_module("cogs.economia")
+        await economia.setup(bot)
+    except Exception as e:
+        print(f"Erro ao carregar cog economia: {e}")
+    # voice_time_display removido - não carregar mais
+    try:
+        mod = importlib.import_module("cogs.mod")
+        await mod.setup(bot)
+    except Exception as e:
+        print(f"Erro ao carregar cog mod: {e}")
+
     update_status.start()
     await bot.tree.sync()
 
