@@ -483,27 +483,35 @@ async def on_voice_state_update(member, before, after):
 
 @bot.event
 async def setup_hook():
-    # Carregar cogs (import dinâmico para evitar problemas de importação)
     import importlib
+
+    # Carregar cog economia
     try:
         economia = importlib.import_module("cogs.economia")
         await economia.setup(bot)
     except Exception as e:
         print(f"Erro ao carregar cog economia: {e}")
-    # voice_time_display removido - não carregar mais
+
+    # Carregar mod
     try:
         mod = importlib.import_module("cogs.mod")
         await mod.setup(bot)
     except Exception as e:
         print(f"Erro ao carregar cog mod: {e}")
 
+    # ==============================
+    # NOVO: carregar painel.py
+    # ==============================
+    try:
+        painel = importlib.import_module("cogs.painel")
+        await painel.setup(bot)
+        print("Painel carregado com sucesso!")
+    except Exception as e:
+        print(f"Erro ao carregar cog painel: {e}")
+
     update_status.start()
     await bot.tree.sync()
 
-
-@update_status.before_loop
-async def before_update_status():
-    await bot.wait_until_ready()
 
 
 @bot.event
