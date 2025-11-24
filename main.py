@@ -227,8 +227,21 @@ async def slash_perfil(interaction: discord.Interaction, membro: discord.Member 
 @bot.tree.command(name="mensagem", description="Cria mensagens personalizadas.")
 @app_commands.describe(titulo="Título da embed", texto="Texto principal da embed")
 async def slash_mensagem(interaction: discord.Interaction, titulo: str, texto: str):
-    embed = discord.Embed(title=titulo, description=texto, color=discord.Color.blurple())
-    await interaction.response.send_message(embed=embed)
+
+    # Deferir para ocultar totalmente o uso do comando
+    await interaction.response.defer(ephemeral=True)
+
+    embed = discord.Embed(
+        title=titulo,
+        description=texto,
+        color=discord.Color.blurple(),
+    )
+
+    # Envia a embed no canal sem mostrar que veio do comando
+    await interaction.channel.send(embed=embed)
+
+    # NÃO enviar followup para permanecer invisível
+
 
 
 @bot.tree.command(name="set-sobre", description="Define o seu 'Sobre Mim'.")
