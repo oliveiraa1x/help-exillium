@@ -278,18 +278,39 @@ class Casamento(commands.Cog):
 
 
 async def setup(bot):
-    # Remover comandos se já existirem para evitar conflitos
-    try:
-        bot.tree.remove_command("casar")
-    except:
-        pass
-    try:
-        bot.tree.remove_command("divorciar")
-    except:
-        pass
+    # Verificar se o cog já foi carregado
+    if bot.get_cog("Casamento"):
+        print("Cog Casamento já está carregado, pulando...")
+        return
+    
+    # Remover comandos se já existirem
+    for cmd_name in ["casar", "divorciar"]:
+        existing = bot.tree.get_command(cmd_name)
+        if existing:
+            try:
+                bot.tree.remove_command(cmd_name)
+            except:
+                pass
     
     cog = Casamento(bot)
     await bot.add_cog(cog)
-    bot.tree.add_command(cog.casar)
-    bot.tree.add_command(cog.divorciar)
+    
+    # Adicionar comandos
+    try:
+        bot.tree.add_command(cog.casar)
+    except Exception as e:
+        # Se já estiver registrado, apenas avisar mas continuar
+        if "already registered" in str(e).lower():
+            print(f"Comando 'casar' já está registrado, continuando...")
+        else:
+            raise e
+    
+    try:
+        bot.tree.add_command(cog.divorciar)
+    except Exception as e:
+        # Se já estiver registrado, apenas avisar mas continuar
+        if "already registered" in str(e).lower():
+            print(f"Comando 'divorciar' já está registrado, continuando...")
+        else:
+            raise e
 
