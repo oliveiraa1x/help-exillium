@@ -140,7 +140,14 @@ class Casamento(commands.Cog):
         self.bot = bot
 
     def cog_unload(self):
-        self.bot.tree.remove_command(self.casar.name, type=self.casar.type)
+        try:
+            self.bot.tree.remove_command(self.casar.name, type=self.casar.type)
+        except:
+            pass
+        try:
+            self.bot.tree.remove_command(self.divorciar.name, type=self.divorciar.type)
+        except:
+            pass
 
     @app_commands.command(name="casar", description="Peça alguém em casamento!")
     @app_commands.describe(pessoa="A pessoa que você quer casar")
@@ -271,6 +278,16 @@ class Casamento(commands.Cog):
 
 
 async def setup(bot):
+    # Remover comandos se já existirem para evitar conflitos
+    try:
+        bot.tree.remove_command("casar")
+    except:
+        pass
+    try:
+        bot.tree.remove_command("divorciar")
+    except:
+        pass
+    
     cog = Casamento(bot)
     await bot.add_cog(cog)
     bot.tree.add_command(cog.casar)
