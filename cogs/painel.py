@@ -1,6 +1,6 @@
 import discord
 from discord.ext import commands
-from datetime import timedelta   # <=== IMPORT CORRETO
+import datetime
 
 LOG_CHANNEL_ID = 1421609844934443029  # <=== CANAL DE LOGS
 
@@ -58,11 +58,19 @@ class AdvertModal(discord.ui.Modal, title="Aplicar Advertência"):
     reason = discord.ui.TextInput(label="Motivo", style=discord.TextStyle.paragraph)
 
     async def on_submit(self, interaction: discord.Interaction):
+        # Validar ID do usuário
+        try:
+            user_id = int(self.user_id.value)
+        except ValueError:
+            return await interaction.response.send_message("❌ ID do usuário inválido.", ephemeral=True)
 
-        user = interaction.guild.get_member(int(self.user_id.value))
-
+        user = interaction.guild.get_member(user_id)
         if not user:
-            return await interaction.response.send_message("❌ Usuário não encontrado.", ephemeral=True)
+            return await interaction.response.send_message("❌ Usuário não encontrado no servidor.", ephemeral=True)
+
+        # Validações de segurança
+        if user == interaction.user:
+            return await interaction.response.send_message("❌ Você não pode se advertir!", ephemeral=True)
 
         await interaction.response.send_message(
             f"⚠️ **{user.mention} foi advertido.**\n📄 Motivo: `{self.reason.value}`",
@@ -88,28 +96,56 @@ class MuteModal(discord.ui.Modal, title="Aplicar Mute"):
     reason = discord.ui.TextInput(label="Motivo", style=discord.TextStyle.paragraph)
 
     async def on_submit(self, interaction: discord.Interaction):
+        # Validar ID do usuário
+        try:
+            user_id = int(self.user_id.value)
+        except ValueError:
+            return await interaction.response.send_message("❌ ID do usuário inválido.", ephemeral=True)
 
-        user = interaction.guild.get_member(int(self.user_id.value))
+        user = interaction.guild.get_member(user_id)
         if not user:
-            return await interaction.response.send_message("❌ Usuário não encontrado.", ephemeral=True)
+            return await interaction.response.send_message("❌ Usuário não encontrado no servidor.", ephemeral=True)
 
-        tempo = self.duration.value.lower()
+        # Validações de segurança
+        if user == interaction.user:
+            return await interaction.response.send_message("❌ Você não pode se mutar!", ephemeral=True)
+
+        if user.bot:
+            return await interaction.response.send_message("❌ Não é possível mutar bots!", ephemeral=True)
+
+        if user == interaction.guild.owner:
+            return await interaction.response.send_message("❌ Não é possível mutar o dono do servidor!", ephemeral=True)
+
+        # Verificar hierarquia de cargos
+        if interaction.user.top_role <= user.top_role and interaction.user != interaction.guild.owner:
+            return await interaction.response.send_message("❌ Você não pode mutar alguém com cargo igual ou superior ao seu!", ephemeral=True)
+
+        # Processar duração
+        tempo = self.duration.value.lower().strip()
         mult = {"m": 60, "h": 3600, "d": 86400}
 
         try:
+            if not tempo[-1] in mult:
+                raise ValueError
             segundos = int(tempo[:-1]) * mult.get(tempo[-1])
-        except:
+            if segundos <= 0:
+                raise ValueError
+        except (ValueError, KeyError):
             return await interaction.response.send_message("❌ Formato inválido. Use ex: `10m`, `2h`, `1d`.", ephemeral=True)
 
-        # Agora usando datetime CORRETO
-        import datetime
-        until_time = datetime.datetime.utcnow() + datetime.timedelta(seconds=segundos)
+        # Usando discord.utils.utcnow() que é a forma recomendada
+        until_time = discord.utils.utcnow() + datetime.timedelta(seconds=segundos)
 
         # Forma correta do timeout:
-        await user.timeout(
-            until_time,        # até quando
-            self.reason.value  # motivo
-        )
+        try:
+            await user.timeout(
+                until=until_time,
+                reason=self.reason.value
+            )
+        except discord.Forbidden:
+            return await interaction.response.send_message("❌ Não tenho permissão para aplicar timeout neste membro.", ephemeral=True)
+        except discord.HTTPException as e:
+            return await interaction.response.send_message(f"❌ Erro ao aplicar timeout: {str(e)}", ephemeral=True)
 
         await interaction.response.send_message(
             f"🔇 **{user.mention} foi mutado por `{self.duration.value}`**\n📄 Motivo: `{self.reason.value}`",
@@ -137,13 +173,33 @@ class KickModal(discord.ui.Modal, title="Expulsar Membro"):
     reason = discord.ui.TextInput(label="Motivo", style=discord.TextStyle.paragraph)
 
     async def on_submit(self, interaction: discord.Interaction):
+        # Validar ID do usuário
+        try:
+            user_id = int(self.user_id.value)
+        except ValueError:
+            return await interaction.response.send_message("❌ ID do usuário inválido.", ephemeral=True)
 
-        user = interaction.guild.get_member(int(self.user_id.value))
-
+        user = interaction.guild.get_member(user_id)
         if not user:
-            return await interaction.response.send_message("❌ Usuário não encontrado.", ephemeral=True)
+            return await interaction.response.send_message("❌ Usuário não encontrado no servidor.", ephemeral=True)
 
-        await user.kick(reason=self.reason.value)
+        # Validações de segurança
+        if user == interaction.user:
+            return await interaction.response.send_message("❌ Você não pode se expulsar!", ephemeral=True)
+
+        if user == interaction.guild.owner:
+            return await interaction.response.send_message("❌ Não é possível expulsar o dono do servidor!", ephemeral=True)
+
+        # Verificar hierarquia de cargos
+        if interaction.user.top_role <= user.top_role and interaction.user != interaction.guild.owner:
+            return await interaction.response.send_message("❌ Você não pode expulsar alguém com cargo igual ou superior ao seu!", ephemeral=True)
+
+        try:
+            await user.kick(reason=self.reason.value)
+        except discord.Forbidden:
+            return await interaction.response.send_message("❌ Não tenho permissão para expulsar este membro.", ephemeral=True)
+        except discord.HTTPException as e:
+            return await interaction.response.send_message(f"❌ Erro ao expulsar membro: {str(e)}", ephemeral=True)
 
         await interaction.response.send_message(
             f"👢 **{user.mention} foi expulso.**\n📄 Motivo: `{self.reason.value}`",
@@ -168,13 +224,33 @@ class BanModal(discord.ui.Modal, title="Banir Membro"):
     reason = discord.ui.TextInput(label="Motivo", style=discord.TextStyle.paragraph)
 
     async def on_submit(self, interaction: discord.Interaction):
+        # Validar ID do usuário
+        try:
+            user_id = int(self.user_id.value)
+        except ValueError:
+            return await interaction.response.send_message("❌ ID do usuário inválido.", ephemeral=True)
 
-        user = interaction.guild.get_member(int(self.user_id.value))
-
+        user = interaction.guild.get_member(user_id)
         if not user:
-            return await interaction.response.send_message("❌ Usuário não encontrado.", ephemeral=True)
+            return await interaction.response.send_message("❌ Usuário não encontrado no servidor.", ephemeral=True)
 
-        await user.ban(reason=self.reason.value)
+        # Validações de segurança
+        if user == interaction.user:
+            return await interaction.response.send_message("❌ Você não pode se banir!", ephemeral=True)
+
+        if user == interaction.guild.owner:
+            return await interaction.response.send_message("❌ Não é possível banir o dono do servidor!", ephemeral=True)
+
+        # Verificar hierarquia de cargos
+        if interaction.user.top_role <= user.top_role and interaction.user != interaction.guild.owner:
+            return await interaction.response.send_message("❌ Você não pode banir alguém com cargo igual ou superior ao seu!", ephemeral=True)
+
+        try:
+            await user.ban(reason=self.reason.value)
+        except discord.Forbidden:
+            return await interaction.response.send_message("❌ Não tenho permissão para banir este membro.", ephemeral=True)
+        except discord.HTTPException as e:
+            return await interaction.response.send_message(f"❌ Erro ao banir membro: {str(e)}", ephemeral=True)
 
         await interaction.response.send_message(
             f"🔨 **{user.mention} foi banido.**\n📄 Motivo: `{self.reason.value}`",

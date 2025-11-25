@@ -522,6 +522,14 @@ async def setup_hook():
     except Exception as e:
         print(f"Erro ao carregar cog painel: {e}")
 
+    # Carregar casamento
+    try:
+        casamento = importlib.import_module("cogs.casamento")
+        await casamento.setup(bot)
+        print("Casamento carregado com sucesso!")
+    except Exception as e:
+        print(f"Erro ao carregar cog casamento: {e}")
+
     update_status.start()
     await bot.tree.sync()
 

@@ -3,7 +3,6 @@ from discord.ui import Modal, TextInput
 import datetime
 import json
 import os
-from datetime import timedelta   #  <<<<<<<<<< ADICIONADO
 
 PUNICOES_ARQUIVO = "punicoes.json"
 

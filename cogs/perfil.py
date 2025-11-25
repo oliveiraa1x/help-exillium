@@ -144,6 +144,31 @@ class Perfil(commands.Cog):
             inline=False
         )
 
+        # CASAMENTO
+        casado_com_id = db[user_id].get("casado_com")
+        if casado_com_id:
+            try:
+                casado_com_user = await self.bot.fetch_user(int(casado_com_id))
+                # Determinar gênero para "casado(a)"
+                # Como não temos informação de gênero, vamos usar "casado(a)" genérico
+                embed.add_field(
+                    name="💍 Estado Civil:",
+                    value=f"Casado(a) com {casado_com_user.mention}",
+                    inline=False
+                )
+            except:
+                embed.add_field(
+                    name="💍 Estado Civil:",
+                    value="Casado(a)",
+                    inline=False
+                )
+        else:
+            embed.add_field(
+                name="💍 Estado Civil:",
+                value="Solteiro(a)",
+                inline=False
+            )
+
         # TEMPO EM CALL
         rank_call_text = f"🏆 **#{rank_call}**" if rank_call else "❌ Sem ranking"
         embed.add_field(
