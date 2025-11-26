@@ -46,13 +46,9 @@ class Perfil(commands.Cog):
                 if not is_bot:
                     if category == "call":
                         value = data.get("tempo_total", 0)
-                    elif category == "souls":
-                        value = data.get("soul", 0)
-                    elif category == "xp":
-                        value = data.get("xp", 0)
+                        ranking_items.append((uid, value))
                     else:
                         continue
-                    ranking_items.append((uid, value))
             except (ValueError, discord.NotFound, discord.HTTPException):
                 continue
         
@@ -99,15 +95,8 @@ class Perfil(commands.Cog):
         else:
             tempo_atual = "❌ Não está em call"
 
-        # ECONOMIA
-        souls = db[user_id].get("soul", 0)
-        xp = db[user_id].get("xp", 0)
-        level = db[user_id].get("level", 1)
-
-        # Calcular rankings
+        # Calcular ranking
         rank_call = await self.get_user_rank(db, user_id, "call", interaction)
-        rank_souls = await self.get_user_rank(db, user_id, "souls", interaction)
-        rank_xp = await self.get_user_rank(db, user_id, "xp", interaction)
 
         # EMBED
         embed = discord.Embed(
@@ -118,18 +107,35 @@ class Perfil(commands.Cog):
         # Avatar
         embed.set_thumbnail(url=(membro.avatar.url if membro.avatar else membro.display_avatar.url))
 
-        # Datas da conta
+        # Datas da conta e casamento
         embed.add_field(
             name="📅 Conta criada em:",
             value=membro.created_at.strftime("%d/%m/%Y"),
             inline=True
         )
 
-        embed.add_field(
-            name="📥 Entrou no servidor:",
-            value=membro.joined_at.strftime("%d/%m/%Y") if membro.joined_at else "Desconhecido",
-            inline=True
-        )
+        # CASAMENTO
+        casado_com_id = db[user_id].get("casado_com")
+        if casado_com_id:
+            try:
+                casado_com_user = await self.bot.fetch_user(int(casado_com_id))
+                embed.add_field(
+                    name="💍 Casado(a) com:",
+                    value=casado_com_user.mention,
+                    inline=True
+                )
+            except:
+                embed.add_field(
+                    name="💍 Casado(a) com:",
+                    value="Usuário não encontrado",
+                    inline=True
+                )
+        else:
+            embed.add_field(
+                name="💍 Casado(a) com:",
+                value="Solteiro(a)",
+                inline=True
+            )
 
         embed.add_field(
             name="\u200b",
@@ -144,53 +150,12 @@ class Perfil(commands.Cog):
             inline=False
         )
 
-        # CASAMENTO
-        casado_com_id = db[user_id].get("casado_com")
-        if casado_com_id:
-            try:
-                casado_com_user = await self.bot.fetch_user(int(casado_com_id))
-                # Determinar gênero para "casado(a)"
-                # Como não temos informação de gênero, vamos usar "casado(a)" genérico
-                embed.add_field(
-                    name="💍 Estado Civil:",
-                    value=f"Casado(a) com {casado_com_user.mention}",
-                    inline=False
-                )
-            except:
-                embed.add_field(
-                    name="💍 Estado Civil:",
-                    value="Casado(a)",
-                    inline=False
-                )
-        else:
-            embed.add_field(
-                name="💍 Estado Civil:",
-                value="Solteiro(a)",
-                inline=False
-            )
-
         # TEMPO EM CALL
         rank_call_text = f"🏆 **#{rank_call}**" if rank_call else "❌ Sem ranking"
         embed.add_field(
             name="🎧 Tempo em Call",
             value=f"**Atual:** {tempo_atual}\n**Total:** {tempo_total_fmt}\n**Rank:** {rank_call_text}",
-            inline=True
-        )
-
-        # ECONOMIA - Souls com ranking
-        rank_souls_text = f"🏆 **#{rank_souls}**" if rank_souls else "❌ Sem ranking"
-        embed.add_field(
-            name="💎 Souls",
-            value=f"**{souls:,}** 💎\n**Rank:** {rank_souls_text}",
-            inline=True
-        )
-
-        # XP e Level com ranking
-        rank_xp_text = f"🏆 **#{rank_xp}**" if rank_xp else "❌ Sem ranking"
-        embed.add_field(
-            name="⭐ Nível & XP",
-            value=f"**Nível {level}**\n**{xp:,}** XP\n**Rank XP:** {rank_xp_text}",
-            inline=True
+            inline=False
         )
 
         # Banner
