@@ -1,38 +1,50 @@
-# ==============================
-# Comando /frase (versão invisível)
-# ==============================
+import discord
+from discord.ext import commands
+from discord import app_commands
 
-@bot.tree.command(name="frase", description="Envie uma frase ou poesia para o servidor.")
-@app_commands.describe(frase="Sua frase ou poesia")
-async def slash_frase(interaction: discord.Interaction, frase: str):
-    # Deferir para ocultar totalmente o uso do comando
-    await interaction.response.defer(thinking=False, ephemeral=True)
+class Frase(commands.Cog):
+    def __init__(self, bot):
+        self.bot = bot
 
-    # Embed que irá para o chat
-    embed = discord.Embed(
-        title="📜 Nova frase enviada!",
-        color=discord.Color.blurple()
-    )
+    def cog_unload(self):
+        self.bot.tree.remove_command(self.frase.name, type=self.frase.type)
 
-    embed.add_field(
-        name="👤 Autor:",
-        value=interaction.user.mention,
-        inline=False
-    )
+    @app_commands.command(name="frase", description="Envie uma frase ou poesia para o servidor.")
+    @app_commands.describe(frase="Sua frase ou poesia")
+    async def frase(self, interaction: discord.Interaction, frase: str):
+        # Deferir para ocultar totalmente o uso do comando
+        await interaction.response.defer(thinking=False, ephemeral=True)
 
-    embed.add_field(
-        name="✍️ Frase / Poesia:",
-        value=frase,
-        inline=False
-    )
+        # Embed que irá para o chat
+        embed = discord.Embed(
+            title="📜 Nova frase enviada!",
+            color=discord.Color.blurple()
+        )
 
-    # O BOT envia a mensagem pública — sem aparecer que usaram comando
-    msg = await interaction.channel.send(embed=embed)
+        embed.add_field(
+            name="👤 Autor:",
+            value=interaction.user.mention,
+            inline=False
+        )
 
-    # Reação automática
-    try:
-        await msg.add_reaction("💖")
-    except:
-        pass
+        embed.add_field(
+            name="✍️ Frase / Poesia:",
+            value=frase,
+            inline=False
+        )
 
-    # NÃO enviar followup para permanecer invisível
+        # O BOT envia a mensagem pública — sem aparecer que usaram comando
+        msg = await interaction.channel.send(embed=embed)
+
+        # Reação automática
+        try:
+            await msg.add_reaction("💖")
+        except:
+            pass
+
+        # NÃO enviar followup para permanecer invisível
+
+async def setup(bot):
+    cog = Frase(bot)
+    await bot.add_cog(cog)
+    bot.tree.add_command(cog.frase)

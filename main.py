@@ -184,6 +184,50 @@ async def slash_help(interaction: discord.Interaction):
     await interaction.response.send_message(embed=embed, ephemeral=True)
 
 
+async def get_user_rank_call(db: dict, user_id: str, interaction: discord.Interaction):
+    """Calcula o ranking do usuário em tempo de call"""
+    ranking_items = []
+    checked_users = {}  # Cache de usuários já verificados
+    
+    for uid, data in db.items():
+        try:
+            uid_int = int(uid)
+            is_bot = None
+            
+            # Verificar cache primeiro
+            if uid in checked_users:
+                is_bot = checked_users[uid]
+            else:
+                member = interaction.guild.get_member(uid_int) if interaction.guild else None
+                if member:
+                    is_bot = member.bot
+                    checked_users[uid] = is_bot
+                else:
+                    try:
+                        user = await bot.fetch_user(uid_int)
+                        is_bot = user.bot
+                        checked_users[uid] = is_bot
+                    except:
+                        checked_users[uid] = True  # Marcar como bot se não conseguir buscar
+                        continue
+            
+            if not is_bot:
+                value = data.get("tempo_total", 0)
+                ranking_items.append((uid, value))
+        except (ValueError, discord.NotFound, discord.HTTPException):
+            continue
+    
+    # Ordenar por valor (maior primeiro)
+    ranking_items.sort(key=lambda x: x[1], reverse=True)
+    
+    # Encontrar posição do usuário
+    for pos, (uid, _) in enumerate(ranking_items, start=1):
+        if uid == user_id:
+            return pos
+    
+    return None
+
+
 @bot.tree.command(name="perfil", description="Mostra um perfil completo do usuário.")
 @app_commands.describe(membro="Membro que terá o perfil exibido")
 async def slash_perfil(interaction: discord.Interaction, membro: discord.Member | None = None):
@@ -201,17 +245,60 @@ async def slash_perfil(interaction: discord.Interaction, membro: discord.Member 
     else:
         tempo_atual = "❌ Não está em call"
 
+    # Calcular ranking
+    rank_call = await get_user_rank_call(db, uid, interaction)
+
     embed = discord.Embed(
         title=f"👤 Perfil de {membro.display_name}",
         color=discord.Color.red(),
     )
     embed.set_thumbnail(url=(membro.avatar.url if membro.avatar else membro.display_avatar.url))
-    embed.add_field(name="📅 Conta criada em:", value=membro.created_at.strftime("%d/%m/%Y"), inline=True)
-    joined_at = membro.joined_at.strftime("%d/%m/%Y") if membro.joined_at else "Desconhecido"
-    embed.add_field(name="📥 Entrou no servidor:", value=joined_at, inline=True)
+    
+    # Datas da conta e casamento
+    embed.add_field(
+        name="📅 Conta criada em:",
+        value=membro.created_at.strftime("%d/%m/%Y"),
+        inline=True
+    )
+
+    # CASAMENTO
+    casado_com_id = db[uid].get("casado_com")
+    if casado_com_id:
+        try:
+            casado_com_user = await bot.fetch_user(int(casado_com_id))
+            embed.add_field(
+                name="💍 Casado(a) com:",
+                value=casado_com_user.mention,
+                inline=True
+            )
+        except:
+            embed.add_field(
+                name="💍 Casado(a) com:",
+                value="Usuário não encontrado",
+                inline=True
+            )
+    else:
+        embed.add_field(
+            name="💍 Casado(a) com:",
+            value="Solteiro(a)",
+            inline=True
+        )
+
+    embed.add_field(
+        name="\u200b",
+        value="\u200b",
+        inline=True
+    )
+
     embed.add_field(name="📝 Sobre Mim:", value=sobre, inline=False)
-    embed.add_field(name="🎧 Tempo atual em call:", value=tempo_atual, inline=True)
-    embed.add_field(name="⏲️ Tempo total acumulado:", value=tempo_total_fmt, inline=True)
+    
+    # TEMPO EM CALL
+    rank_call_text = f"🏆 **#{rank_call}**" if rank_call else "❌ Sem ranking"
+    embed.add_field(
+        name="🎧 Tempo em Call",
+        value=f"**Atual:** {tempo_atual}\n**Total:** {tempo_total_fmt}\n**Rank:** {rank_call_text}",
+        inline=False
+    )
 
     try:
         user = await bot.fetch_user(membro.id)
@@ -222,6 +309,8 @@ async def slash_perfil(interaction: discord.Interaction, membro: discord.Member 
 
     embed.set_footer(text="Aeternum Exilium • Sistema de Perfil")
     await interaction.response.send_message(embed=embed)
+
+
 
 
 @bot.tree.command(name="mensagem", description="Cria mensagens personalizadas.")
@@ -529,6 +618,14 @@ async def setup_hook():
         print("Casamento carregado com sucesso!")
     except Exception as e:
         print(f"Erro ao carregar cog casamento: {e}")
+
+    # Carregar frase
+    try:
+        frase = importlib.import_module("cogs.frase")
+        await frase.setup(bot)
+        print("Frase carregado com sucesso!")
+    except Exception as e:
+        print(f"Erro ao carregar cog frase: {e}")
 
     update_status.start()
     await bot.tree.sync()
