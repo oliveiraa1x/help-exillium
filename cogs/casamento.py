@@ -1,9 +1,9 @@
+# casamento.py
+
 import discord
 from discord import app_commands
 from discord.ext import commands
 import datetime
-
-
 class CasamentoButtons(discord.ui.View):
     def __init__(self, proposer: discord.Member, target: discord.Member, bot):
         super().__init__(timeout=300)  # 5 minutos para responder
