@@ -1,8 +1,10 @@
 # gf.py
 
 import json
-import discord
 import os
+import discord
+from discord.ext import commands
+from discord import app_commands
 from datetime import datetime
 from uuid import uuid4
 

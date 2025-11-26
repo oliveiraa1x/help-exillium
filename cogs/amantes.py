@@ -3,12 +3,13 @@
 Sistema web simples para gerenciar 'amantes' (relacionamentos privados).
 Uso educacional: não incentive ou promova condutas danosas.
 Dependências:
-    pip install flask cryptography
 """
-
+import discord
 import sqlite3
 import csv
 import os
+from discord.ext import commands
+from discord import app_commands
 from datetime import datetime
 from functools import wraps
 from flask import (
