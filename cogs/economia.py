@@ -109,7 +109,7 @@ class Economia(commands.Cog):
         return new_level > old_level, new_level
 
     def add_soul(self, user_id: int, amount: int):
-        """Adiciona souls ao usuário"""
+        """Adiciona almas ao usuário"""
         uid = self.ensure_user(user_id)
         db = self.bot.db()
         db[uid]["soul"] = db[uid].get("soul", 0) + amount
@@ -122,7 +122,7 @@ class Economia(commands.Cog):
             if missao.get("tipo") == tipo:
                 missao["progresso"] = missao.get("progresso", 0) + quantidade
 
-    @app_commands.command(name="daily", description="Receba sua recompensa diária de souls e XP!")
+    @app_commands.command(name="daily", description="Receba sua recompensa diária de almas e XP!")
     async def daily(self, interaction: discord.Interaction):
         uid = self.ensure_user(interaction.user.id)
         db = self.bot.db()
@@ -184,7 +184,7 @@ class Economia(commands.Cog):
             description=f"**{interaction.user.mention}** coletou sua recompensa diária!",
             color=discord.Color.gold()
         )
-        embed.add_field(name="💰 Souls ganhos", value=f"**{bonus_souls}** 🔮", inline=True)
+        embed.add_field(name="💰 Almas ganhas", value=f"**{bonus_souls}** 🔮", inline=True)
         embed.add_field(name="⭐ XP ganho", value=f"**{bonus_xp}** XP", inline=True)
         embed.add_field(name="🔥 Streak", value=f"**{streak}** dias consecutivos", inline=True)
         
@@ -199,7 +199,7 @@ class Economia(commands.Cog):
         embed.set_footer(text="Aeternum Exilium • Sistema de Economia")
         await interaction.response.send_message(embed=embed)
 
-    @app_commands.command(name="mine", description="Mine e ganhe souls! (Cooldown: 60s)")
+    @app_commands.command(name="mine", description="Mine e ganhe almas! (Cooldown: 60s)")
     async def mine(self, interaction: discord.Interaction):
         uid = self.ensure_user(interaction.user.id)
         db = self.bot.db()
@@ -268,7 +268,7 @@ class Economia(commands.Cog):
             description=f"**{interaction.user.mention}** minerou com sucesso!",
             color=discord.Color.blue()
         )
-        embed.add_field(name="💰 Souls ganhos", value=f"**{bonus_souls}** 🔮", inline=True)
+        embed.add_field(name="💰 Almas ganhas", value=f"**{bonus_souls}** 🔮", inline=True)
         embed.add_field(name="⭐ XP ganho", value=f"**{bonus_xp}** XP", inline=True)
         embed.add_field(name="🔥 Streak", value=f"**{streak}** minerações", inline=True)
         
@@ -286,7 +286,7 @@ class Economia(commands.Cog):
         embed.set_footer(text="Aeternum Exilium • Sistema de Mineração")
         await interaction.response.send_message(embed=embed)
 
-    @app_commands.command(name="balance", description="Veja quantas souls você possui")
+    @app_commands.command(name="balance", description="Veja quantas almas você possui")
     @app_commands.describe(membro="Membro para ver o saldo (opcional)")
     async def balance(self, interaction: discord.Interaction, membro: discord.Member = None):
         membro = membro or interaction.user
@@ -306,7 +306,7 @@ class Economia(commands.Cog):
             title=f"💰 Carteira de {membro.display_name}",
             color=discord.Color.green()
         )
-        embed.add_field(name="🔮 Souls", value=f"**{souls:,}** 🔮", inline=True)
+        embed.add_field(name="🔮 Almas", value=f"**{souls:,}** 🔮", inline=True)
         embed.add_field(name="⭐ Nível", value=f"**{level}**", inline=True)
         embed.add_field(name="📊 XP", value=f"**{xp:,}** XP", inline=True)
         embed.add_field(
@@ -325,7 +325,7 @@ class Economia(commands.Cog):
         embed.set_footer(text="Aeternum Exilium • Sistema de Economia")
         await interaction.response.send_message(embed=embed)
 
-    @app_commands.command(name="top-souls", description="Ranking dos mais ricos em souls")
+    @app_commands.command(name="top-souls", description="Ranking dos mais ricos em almas")
     async def top_souls(self, interaction: discord.Interaction):
         db = self.bot.db()
         
@@ -348,7 +348,7 @@ class Economia(commands.Cog):
         ranking = sorted(ranking_items, key=lambda x: x[1], reverse=True)[:10]
         
         embed = discord.Embed(
-            title="🏆 Top 10 — Mais Ricos em Souls",
+            title="🏆 Top 10 — Mais Ricos em Almas",
             color=discord.Color.gold()
         )
         
@@ -558,7 +558,7 @@ class Economia(commands.Cog):
             description=f"Você reivindicou a recompensa da missão **{missao['nome']}**!",
             color=discord.Color.green()
         )
-        embed.add_field(name="💰 Souls ganhos", value=f"**{recompensa_soul}** 🔮", inline=True)
+        embed.add_field(name="💰 Almas ganhas", value=f"**{recompensa_soul}** 🔮", inline=True)
         embed.add_field(name="⭐ XP ganho", value=f"**{recompensa_xp}** XP", inline=True)
         
         if leveled_up:
@@ -658,7 +658,7 @@ class Economia(commands.Cog):
             description=f"**{interaction.user.mention}** retornou da floresta escura!",
             color=discord.Color.dark_purple()
         )
-        embed_resultado.add_field(name="💰 Souls ganhos", value=f"**{bonus_souls}** 🔮", inline=True)
+        embed_resultado.add_field(name="💰 Almas ganhas", value=f"**{bonus_souls}** 🔮", inline=True)
         embed_resultado.add_field(name="⭐ XP ganho", value=f"**{bonus_xp}** XP", inline=True)
         embed_resultado.add_field(name="🔥 Streak", value=f"**{streak}** caçadas", inline=True)
         
@@ -783,7 +783,7 @@ class Economia(commands.Cog):
             description=f"<@{user_id}> retornou da floresta escura após 12 horas de caçada!",
             color=discord.Color.gold()
         )
-        embed.add_field(name="💰 Souls ganhos", value=f"**{bonus_souls}** 🔮", inline=True)
+        embed.add_field(name="💰 Almas ganhas", value=f"**{bonus_souls}** 🔮", inline=True)
         embed.add_field(name="⭐ XP ganho", value=f"**{bonus_xp}** XP", inline=True)
         
         if rare_message:

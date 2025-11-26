@@ -178,7 +178,7 @@ async def slash_help(interaction: discord.Interaction):
     embed.add_field(name="💬 Mensagens", value="/mensagem <título> <texto> - Cria uma embed simples", inline=False)
     embed.add_field(name="📝 Sobre Mim", value="/set-sobre <texto> - Define seu 'Sobre Mim'", inline=False)
     embed.add_field(name="🎧 Call", value="/top-tempo - Ranking de tempo em call\n/callstatus - Seu tempo atual em call", inline=False)
-    embed.add_field(name="💰 Economia", value="/daily - Recompensa diária\n/mine - Minerar e ganhar souls\n/caça - Caça rápida (5s)\n/caça-longa - Caça longa (12h)\n/balance [membro] - Ver saldo de souls\n/top-souls - Ranking de souls\n/top-level - Ranking de níveis", inline=False)
+    embed.add_field(name="💰 Economia", value="/daily - Recompensa diária\n/mine - Minerar e ganhar almas\n/caça - Caça rápida (5s)\n/caça-longa - Caça longa (12h)\n/balance [membro] - Ver saldo de almas\n/top-souls - Ranking de almas\n/top-level - Ranking de níveis", inline=False)
     embed.add_field(name="📋 Missões", value="/missoes - Ver suas missões\n/claim-missao <número> - Reivindicar recompensa", inline=False)
     embed.add_field(name="ℹ️ Info", value="/uptime - Tempo online do bot", inline=False)
     await interaction.response.send_message(embed=embed, ephemeral=True)

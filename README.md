@@ -6,11 +6,11 @@ Bot Discord completo para **Aeternum Exilium** com sistema de economia, níveis,
 
 ## ✨ Funcionalidades
 
-- 💰 **Sistema de Economia** - Moeda (Souls), níveis e XP
+- 💰 **Sistema de Economia** - Moeda (Almas), níveis e XP
 - 📊 **Rankings** - Top players em diferentes categorias
 - 🎯 **Missões** - Complete missões e ganhe recompensas
 - 🎧 **Tracking de Call** - Acompanhe tempo em chamadas de voz
-- ⛏️ **Mineração** - Mine recursos e ganhe souls
+- ⛏️ **Mineração** - Mine recursos e ganhe almas
 - 🌲 **Sistema de Caça** - Caça rápida e caça longa por almas
 
 ---
@@ -42,12 +42,12 @@ python main.py
 
 | Comando             | Descrição                             | Cooldown |
 | ------------------- | ------------------------------------- | -------- |
-| `/daily`            | Recompensa diária (50-150 souls + XP) | 24h      |
-| `/mine`             | Minerar e ganhar souls (10-50 souls)  | 60s      |
-| `/caça`             | Caça rápida (15-60 souls)             | 2min     |
-| `/caça-longa`       | Caça longa de 12h (200-500 souls)     | 12h      |
-| `/balance [membro]` | Ver saldo de souls e XP               | -        |
-| `/top-souls`        | Ranking de souls                      | -        |
+| `/daily`            | Recompensa diária (50-150 almas + XP) | 24h      |
+| `/mine`             | Minerar e ganhar almas (10-50 almas)  | 60s      |
+| `/caça`             | Caça rápida (15-60 almas)             | 2min     |
+| `/caça-longa`       | Caça longa de 12h (200-500 almas)     | 12h      |
+| `/balance [membro]` | Ver saldo de almas e XP               | -        |
+| `/top-souls`        | Ranking de almas                      | -        |
 | `/top-level`        | Ranking de níveis                     | -        |
 
 ### 👤 Perfil
@@ -114,9 +114,9 @@ python main.py
 
 ## 💎 Sistema de Economia
 
-### Moeda: Souls
+### Moeda: Almas
 
-Ganhe souls através de:
+Ganhe almas através de:
 
 - ✅ Daily rewards
 - ⛏️ Mineração
@@ -133,23 +133,23 @@ Ganhe **XP** enviando mensagens, fazendo daily, minerando, caçando ou completan
 
 **Daily:**
 
-- 50-150 souls + 20-50 XP
+- 50-150 almas + 20-50 XP
 - Bônus de streak (+10% por dia)
 
 **Mineração:**
 
-- 10-50 souls + 5-15 XP
+- 10-50 almas + 5-15 XP
 - Chance de itens raros (5-10%)
 
 **Caça Rápida:**
 
-- 15-60 souls + 8-20 XP
+- 15-60 almas + 8-20 XP
 - Duração: 5 segundos
 - Chance de almas raras (4-8%)
 
 **Caça Longa:**
 
-- 200-500 souls + 100-250 XP
+- 200-500 almas + 100-250 XP
 - Duração: 12 horas
 - Notificação automática ao terminar
 - Maiores chances de itens raros (15-20%)
@@ -160,10 +160,10 @@ Ganhe **XP** enviando mensagens, fazendo daily, minerando, caçando ou completan
 
 | Tipo        | Objetivo            | Recompensa       |
 | ----------- | ------------------- | ---------------- |
-| Daily       | Coletar daily       | 25 souls + 15 XP |
-| Mineração   | Minerar 5 vezes     | 50 souls + 30 XP |
-| Comunicador | Enviar 20 mensagens | 40 souls + 25 XP |
-| Social      | 30min em call       | 60 souls + 40 XP |
+| Daily       | Coletar daily       | 25 almas + 15 XP |
+| Mineração   | Minerar 5 vezes     | 50 almas + 30 XP |
+| Comunicador | Enviar 20 mensagens | 40 almas + 25 XP |
+| Social      | 30min em call       | 60 almas + 40 XP |
 
 ---
 
@@ -194,7 +194,7 @@ help-exillium/
 O perfil mostra automaticamente seu ranking em:
 
 - 🏆 **Top Call** - Tempo total em call
-- 💎 **Top Souls** - Quantidade de souls
+- 💎 **Top Almas** - Quantidade de almas
 - ⭐ **Top XP** - Experiência total
 
 ---
