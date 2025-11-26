@@ -71,6 +71,37 @@ python main.py
 | `/callstatus` | Tempo atual em call      |
 | `/top-tempo`  | Ranking de tempo em call |
 
+### 🔧 Moderação
+
+| Comando                                  | Descrição                                         | Permissão    |
+| ---------------------------------------- | ------------------------------------------------- | ------------ |
+| `sprt!painel`                            | Painel interativo de moderação (botões)           | -            |
+| `sprt!tempo [@membro]`                   | Mostra tempo em call do membro (ou autor)         | -            |
+| `sprt!addcargo @membro @cargo [tempo]`   | Adiciona cargo; remove após duração (s/m/h/d)     | Manage Roles |
+| `sprt!removercargo @membro @cargo`       | Remove cargo do membro                            | Manage Roles |
+| `sprt!criarcargo @membro NomeDoCargo`    | Cria cargo (se não existir) e adiciona ao membro  | Manage Roles |
+| `sprt!deletecargo @membro @cargo\|Nome`  | Remove cargo; se ficar vazio, deleta o cargo      | Manage Roles |
+| `sprt!mutecall @membro [tempo] [motivo]` | Muta membro em voice (opcional: tempo automático) | Mute Members |
+| `sprt!unmutecall @membro`                | Desmuta membro em voice                           | Mute Members |
+| `sprt!prender @membro [tempo] [motivo]`  | Move para canal 'Prisão' e muta/deafen            | Move Members |
+| `sprt!soltar @membro`                    | Desmuta/deaf do membro e libera                   | Move Members |
+| `sprt!ban @membro [motivo]`              | Bane permanentemente o membro                     | Ban Members  |
+| `sprt!unban <user_id> [motivo]`          | Remove ban pelo ID do usuário                     | Ban Members  |
+| `sprt!help`                              | Lista comandos de moderação (requer Manage Guild) | Manage Guild |
+
+**Painel de Moderação (`sprt!painel`):**
+
+- ⚠️ **Advertência** - Modal para aplicar advertência
+- 🔇 **Mute** - Modal para mutar com duração (10m, 2h, 1d)
+- 👢 **Kick** - Modal para expulsar membro
+- 🔨 **Ban** - Modal para banir membro
+
+**MuteModal:**
+
+- Modal independente para aplicar mute com duração em minutos
+- Aceita ID ou menção do membro
+- Registra punições em arquivo JSON
+
 ### 🔧 Utilitários
 
 | Comando                      | Descrição                 |
