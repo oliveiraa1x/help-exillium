@@ -4,6 +4,8 @@ Sistema web simples para gerenciar 'amantes' (relacionamentos privados).
 Uso educacional: não incentive ou promova condutas danosas.
 Dependências:
 """
+import datetime
+import asyncio
 import discord
 import sqlite3
 import csv

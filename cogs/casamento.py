@@ -1,4 +1,4 @@
-# casamento.py
+# casamento.py  cog de sistema de casamento para discord.py usando db diferente
 
 import discord
 import json

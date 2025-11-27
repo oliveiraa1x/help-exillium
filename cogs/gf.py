@@ -1,4 +1,4 @@
-# gf.py
+# gf.py testando banco de dados simples de pessoas e relacionamentos
 
 import json
 import os
@@ -8,7 +8,6 @@ from discord import app_commands
 from datetime import datetime
 from uuid import uuid4
 
-
 # ==============================
 # arquivos
 # ==============================
@@ -16,7 +15,6 @@ from uuid import uuid4
 ARQ_PESSOAS = "pessoas.json"
 ARQ_RELACOES = "relacoes.json"
 ARQ_LOGS = "logs.txt"
-
 
 # ==============================
 # util
@@ -35,7 +33,6 @@ def salvar(arquivo, dados):
 def log(msg):
     with open(ARQ_LOGS, "a", encoding="utf-8") as f:
         f.write(f"[{datetime.now()}] {msg}\n")
-
 
 # ==============================
 # pessoas
