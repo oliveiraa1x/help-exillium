@@ -29,6 +29,8 @@ load_dotenv = _resolve_load_dotenv()
 # ==============================
 BASE_DIR = Path(__file__).parent
 DATA_PATH = BASE_DIR / "data" / "db.json"
+PERFIL_DB_PATH = BASE_DIR / "data" / "perfil.json"
+TOP_TEMPO_DB_PATH = BASE_DIR / "data" / "top_tempo.json"
 CONFIG_PATH = BASE_DIR / "config.json"
 
 
@@ -51,6 +53,60 @@ def load_db() -> dict:
 def save_db(data: dict) -> None:
     ensure_data_file()
     with DATA_PATH.open("w", encoding="utf-8") as fp:
+        json.dump(data, fp, ensure_ascii=False, indent=2)
+
+
+# ==============================
+# Sistema de Banco de Dados para Perfil
+# ==============================
+def ensure_perfil_db_file() -> None:
+    """Garante que o arquivo de banco de dados de perfil existe"""
+    PERFIL_DB_PATH.parent.mkdir(parents=True, exist_ok=True)
+    if not PERFIL_DB_PATH.exists():
+        PERFIL_DB_PATH.write_text("{}", encoding="utf-8")
+
+
+def load_perfil_db() -> dict:
+    """Carrega o banco de dados de perfil"""
+    ensure_perfil_db_file()
+    try:
+        with PERFIL_DB_PATH.open("r", encoding="utf-8") as fp:
+            return json.load(fp)
+    except json.JSONDecodeError:
+        return {}
+
+
+def save_perfil_db(data: dict) -> None:
+    """Salva o banco de dados de perfil"""
+    ensure_perfil_db_file()
+    with PERFIL_DB_PATH.open("w", encoding="utf-8") as fp:
+        json.dump(data, fp, ensure_ascii=False, indent=2)
+
+
+# ==============================
+# Sistema de Banco de Dados para Top Tempo
+# ==============================
+def ensure_top_tempo_db_file() -> None:
+    """Garante que o arquivo de banco de dados de top tempo existe"""
+    TOP_TEMPO_DB_PATH.parent.mkdir(parents=True, exist_ok=True)
+    if not TOP_TEMPO_DB_PATH.exists():
+        TOP_TEMPO_DB_PATH.write_text("{}", encoding="utf-8")
+
+
+def load_top_tempo_db() -> dict:
+    """Carrega o banco de dados de top tempo"""
+    ensure_top_tempo_db_file()
+    try:
+        with TOP_TEMPO_DB_PATH.open("r", encoding="utf-8") as fp:
+            return json.load(fp)
+    except json.JSONDecodeError:
+        return {}
+
+
+def save_top_tempo_db(data: dict) -> None:
+    """Salva o banco de dados de top tempo"""
+    ensure_top_tempo_db_file()
+    with TOP_TEMPO_DB_PATH.open("w", encoding="utf-8") as fp:
         json.dump(data, fp, ensure_ascii=False, indent=2)
 
 
@@ -126,44 +182,52 @@ def format_time(seconds: int) -> str:
 
 
 def ensure_user_record(user_id: int) -> tuple[dict, str]:
+    """Garante que o usuário existe no banco de dados principal"""
     uid = str(user_id)
     db = bot.db()
     if uid not in db:
+        db[uid] = {}
+        bot.save_db(db)
+    return db, uid
+
+
+def ensure_perfil_record(user_id: int) -> tuple[dict, str]:
+    """Garante que o usuário existe no banco de dados de perfil"""
+    uid = str(user_id)
+    db = load_perfil_db()
+    if uid not in db:
         db[uid] = {
             "sobre": None,
-            "tempo_total": 0,
-            "soul": 0,
-            "xp": 0,
-            "level": 1,
-            "last_daily": None,
-            "last_mine": None,
-            "mine_streak": 0,
-            "last_caca": None,
-            "caca_streak": 0,
-            "caca_longa_ativa": None,
-            "missoes": [],
-            "missoes_completas": []
+            "casado_com": None
         }
-        bot.save_db(db)
+        save_perfil_db(db)
     else:
         # Garantir que campos novos existam para usuários antigos
         defaults = {
-            "soul": 0,
-            "xp": 0,
-            "level": 1,
-            "last_daily": None,
-            "last_mine": None,
-            "mine_streak": 0,
-            "last_caca": None,
-            "caca_streak": 0,
-            "caca_longa_ativa": None,
-            "missoes": [],
-            "missoes_completas": []
+            "sobre": None,
+            "casado_com": None
         }
         for key, value in defaults.items():
             if key not in db[uid]:
                 db[uid][key] = value
-        bot.save_db(db)
+        save_perfil_db(db)
+    return db, uid
+
+
+def ensure_top_tempo_record(user_id: int) -> tuple[dict, str]:
+    """Garante que o usuário existe no banco de dados de top tempo"""
+    uid = str(user_id)
+    db = load_top_tempo_db()
+    if uid not in db:
+        db[uid] = {
+            "tempo_total": 0
+        }
+        save_top_tempo_db(db)
+    else:
+        # Garantir que campos novos existam para usuários antigos
+        if "tempo_total" not in db[uid]:
+            db[uid]["tempo_total"] = 0
+            save_top_tempo_db(db)
     return db, uid
 
 
@@ -184,8 +248,9 @@ async def slash_help(interaction: discord.Interaction):
     await interaction.response.send_message(embed=embed, ephemeral=True)
 
 
-async def get_user_rank_call(db: dict, user_id: str, interaction: discord.Interaction):
+async def get_user_rank_call(user_id: str, interaction: discord.Interaction):
     """Calcula o ranking do usuário em tempo de call"""
+    db = load_top_tempo_db()
     ranking_items = []
     checked_users = {}  # Cache de usuários já verificados
     
@@ -232,10 +297,12 @@ async def get_user_rank_call(db: dict, user_id: str, interaction: discord.Intera
 @app_commands.describe(membro="Membro que terá o perfil exibido")
 async def slash_perfil(interaction: discord.Interaction, membro: discord.Member | None = None):
     membro = membro or interaction.user
-    db, uid = ensure_user_record(membro.id)
+    db, uid = ensure_perfil_record(membro.id)
 
     sobre = db[uid].get("sobre") or "❌ Nenhum Sobre Mim definido ainda."
-    tempo_total = db[uid].get("tempo_total", 0)
+    # Ler tempo_total do banco de top_tempo
+    top_tempo_db = load_top_tempo_db()
+    tempo_total = top_tempo_db.get(uid, {}).get("tempo_total", 0)
     tempo_total_fmt = format_time(tempo_total)
 
     if membro.id in bot.active_users:
@@ -246,7 +313,7 @@ async def slash_perfil(interaction: discord.Interaction, membro: discord.Member 
         tempo_atual = "❌ Não está em call"
 
     # Calcular ranking
-    rank_call = await get_user_rank_call(db, uid, interaction)
+    rank_call = await get_user_rank_call(uid, interaction)
 
     embed = discord.Embed(
         title=f"👤 Perfil de {membro.display_name}",
@@ -336,15 +403,15 @@ async def slash_mensagem(interaction: discord.Interaction, titulo: str, texto: s
 @bot.tree.command(name="set-sobre", description="Define o seu 'Sobre Mim'.")
 @app_commands.describe(texto="Conteúdo do seu Sobre Mim")
 async def slash_set_sobre(interaction: discord.Interaction, texto: str):
-    db, uid = ensure_user_record(interaction.user.id)
+    db, uid = ensure_perfil_record(interaction.user.id)
     db[uid]["sobre"] = texto
-    bot.save_db(db)
+    save_perfil_db(db)
     await interaction.response.send_message("✅ Sobre Mim atualizado!")
 
 
 @bot.tree.command(name="top-tempo", description="Mostra o ranking de tempo em call.")
 async def slash_top_tempo(interaction: discord.Interaction):
-    db = bot.db()
+    db = load_top_tempo_db()
     
     # Filtrar apenas membros reais (não bots)
     ranking_items = []
@@ -574,13 +641,16 @@ async def on_voice_state_update(member, before, after):
         if elapsed <= 0:
             return
 
-        db, uid = ensure_user_record(member.id)
+        db, uid = ensure_top_tempo_record(member.id)
         db[uid]["tempo_total"] = db[uid].get("tempo_total", 0) + elapsed
+        save_top_tempo_db(db)
         
-        # Atualizar progresso de missão de call
-        update_missao_progresso(db, uid, "call", elapsed)
-        
-        bot.save_db(db)
+        # Atualizar progresso de missão de call (no banco de economia)
+        from cogs.economia import load_economia_db, save_economia_db
+        economia_db = load_economia_db()
+        if uid in economia_db:
+            update_missao_progresso(economia_db, uid, "call", elapsed)
+            save_economia_db(economia_db)
 
 
 @bot.event

@@ -1,12 +1,40 @@
 # casamento.py
 
 import discord
-import discord
-from discord.ext import commands
-from discord import app_commands
-from discord import app_commands
-from discord.ext import commands
+import json
 import datetime
+from pathlib import Path
+from discord.ext import commands
+from discord import app_commands
+
+# ==============================
+# Sistema de Banco de Dados para Perfil
+# ==============================
+PERFIL_DB_PATH = Path(__file__).parent.parent / "data" / "perfil.json"
+
+
+def ensure_perfil_db_file() -> None:
+    """Garante que o arquivo de banco de dados de perfil existe"""
+    PERFIL_DB_PATH.parent.mkdir(parents=True, exist_ok=True)
+    if not PERFIL_DB_PATH.exists():
+        PERFIL_DB_PATH.write_text("{}", encoding="utf-8")
+
+
+def load_perfil_db() -> dict:
+    """Carrega o banco de dados de perfil"""
+    ensure_perfil_db_file()
+    try:
+        with PERFIL_DB_PATH.open("r", encoding="utf-8") as fp:
+            return json.load(fp)
+    except json.JSONDecodeError:
+        return {}
+
+
+def save_perfil_db(data: dict) -> None:
+    """Salva o banco de dados de perfil"""
+    ensure_perfil_db_file()
+    with PERFIL_DB_PATH.open("w", encoding="utf-8") as fp:
+        json.dump(data, fp, ensure_ascii=False, indent=2)
 class CasamentoButtons(discord.ui.View):
     def __init__(self, proposer: discord.Member, target: discord.Member, bot):
         super().__init__(timeout=300)  # 5 minutos para responder
@@ -23,7 +51,7 @@ class CasamentoButtons(discord.ui.View):
             )
             return
 
-        db = self.bot.db()
+        db = load_perfil_db()
         proposer_id = str(self.proposer.id)
         target_id = str(self.target.id)
 
@@ -32,17 +60,13 @@ class CasamentoButtons(discord.ui.View):
             db[proposer_id] = {
                 "sobre": None,
                 "tempo_total": 0,
-                "soul": 0,
-                "xp": 0,
-                "level": 1
+                "casado_com": None
             }
         if target_id not in db:
             db[target_id] = {
                 "sobre": None,
                 "tempo_total": 0,
-                "soul": 0,
-                "xp": 0,
-                "level": 1
+                "casado_com": None
             }
 
         # Verificar se algum dos dois já está casado
@@ -79,7 +103,7 @@ class CasamentoButtons(discord.ui.View):
         # Salvar o casamento
         db[proposer_id]["casado_com"] = target_id
         db[target_id]["casado_com"] = proposer_id
-        self.bot.save_db(db)
+        save_perfil_db(db)
 
         # Embed de sucesso
         embed = discord.Embed(
@@ -171,7 +195,7 @@ class Casamento(commands.Cog):
             )
             return
 
-        db = self.bot.db()
+        db = load_perfil_db()
         proposer_id = str(interaction.user.id)
         target_id = str(pessoa.id)
 
@@ -180,19 +204,15 @@ class Casamento(commands.Cog):
             db[proposer_id] = {
                 "sobre": None,
                 "tempo_total": 0,
-                "soul": 0,
-                "xp": 0,
-                "level": 1
+                "casado_com": None
             }
         if target_id not in db:
             db[target_id] = {
                 "sobre": None,
                 "tempo_total": 0,
-                "soul": 0,
-                "xp": 0,
-                "level": 1
+                "casado_com": None
             }
-        self.bot.save_db(db)
+        save_perfil_db(db)
 
         # Verificar se o proposer já está casado
         if db[proposer_id].get("casado_com"):
@@ -249,7 +269,7 @@ class Casamento(commands.Cog):
 
     @app_commands.command(name="divorciar", description="Divorcie-se de seu parceiro(a)")
     async def divorciar(self, interaction: discord.Interaction):
-        db = self.bot.db()
+        db = load_perfil_db()
         user_id = str(interaction.user.id)
 
         if user_id not in db or not db[user_id].get("casado_com"):
@@ -265,7 +285,7 @@ class Casamento(commands.Cog):
         db[user_id]["casado_com"] = None
         if casado_com_id in db:
             db[casado_com_id]["casado_com"] = None
-        self.bot.save_db(db)
+        save_perfil_db(db)
 
         try:
             ex_parceiro = await self.bot.fetch_user(int(casado_com_id))

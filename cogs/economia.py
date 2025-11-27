@@ -2,6 +2,8 @@ import discord
 import random
 import datetime
 import asyncio
+import json
+from pathlib import Path
 from discord import app_commands
 from discord.ext import commands, tasks
 
@@ -42,6 +44,37 @@ def get_xp_for_next_level(level: int) -> int:
     return required_xp
 
 
+# ==============================
+# Sistema de Banco de Dados para Economia
+# ==============================
+ECONOMIA_DB_PATH = Path(__file__).parent.parent / "data" / "economia.json"
+
+
+def ensure_economia_db_file() -> None:
+    """Garante que o arquivo de banco de dados de economia existe"""
+    ECONOMIA_DB_PATH.parent.mkdir(parents=True, exist_ok=True)
+    if not ECONOMIA_DB_PATH.exists():
+        ECONOMIA_DB_PATH.write_text("{}", encoding="utf-8")
+
+
+def load_economia_db() -> dict:
+    """Carrega o banco de dados de economia"""
+    ensure_economia_db_file()
+    try:
+        with ECONOMIA_DB_PATH.open("r", encoding="utf-8") as fp:
+            return json.load(fp)
+    except json.JSONDecodeError:
+        # Se o arquivo estiver corrompido, retorna um dicionário vazio
+        return {}
+
+
+def save_economia_db(data: dict) -> None:
+    """Salva o banco de dados de economia"""
+    ensure_economia_db_file()
+    with ECONOMIA_DB_PATH.open("w", encoding="utf-8") as fp:
+        json.dump(data, fp, ensure_ascii=False, indent=2)
+
+
 class Economia(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
@@ -52,26 +85,25 @@ class Economia(commands.Cog):
         self.check_cacas_longas.start()
 
     def ensure_user(self, user_id: int):
-        """Garante que o usuário existe no banco de dados"""
+        """Garante que o usuário existe no banco de dados de economia"""
         uid = str(user_id)
-        db = self.bot.db()
+        db = load_economia_db()
         if uid not in db:
             db[uid] = {
-                "sobre": None,
-                "tempo_total": 0,
                 "soul": 0,
                 "xp": 0,
                 "level": 1,
                 "last_daily": None,
                 "last_mine": None,
                 "mine_streak": 0,
+                "daily_streak": 0,
                 "last_caca": None,
                 "caca_streak": 0,
                 "caca_longa_ativa": None,
                 "missoes": [],
                 "missoes_completas": []
             }
-            self.bot.save_db(db)
+            save_economia_db(db)
         else:
             defaults = {
                 "soul": 0,
@@ -90,20 +122,20 @@ class Economia(commands.Cog):
             for key, value in defaults.items():
                 if key not in db[uid]:
                     db[uid][key] = value
-            self.bot.save_db(db)
+            save_economia_db(db)
         return uid
 
     def add_xp(self, user_id: int, amount: int):
         """Adiciona XP e atualiza o nível se necessário"""
         uid = self.ensure_user(user_id)
-        db = self.bot.db()
+        db = load_economia_db()
         
         old_level = db[uid].get("level", 1)
         db[uid]["xp"] = db[uid].get("xp", 0) + amount
         new_level = calculate_level(db[uid]["xp"])
         db[uid]["level"] = new_level
         
-        self.bot.save_db(db)
+        save_economia_db(db)
         
         # Retorna se subiu de nível
         return new_level > old_level, new_level
@@ -111,9 +143,9 @@ class Economia(commands.Cog):
     def add_soul(self, user_id: int, amount: int):
         """Adiciona almas ao usuário"""
         uid = self.ensure_user(user_id)
-        db = self.bot.db()
+        db = load_economia_db()
         db[uid]["soul"] = db[uid].get("soul", 0) + amount
-        self.bot.save_db(db)
+        save_economia_db(db)
     
     def update_missao_progresso(self, db: dict, uid: str, tipo: str, quantidade: int = 1):
         """Atualiza o progresso de missões"""
@@ -125,7 +157,7 @@ class Economia(commands.Cog):
     @app_commands.command(name="daily", description="Receba sua recompensa diária de almas e XP!")
     async def daily(self, interaction: discord.Interaction):
         uid = self.ensure_user(interaction.user.id)
-        db = self.bot.db()
+        db = load_economia_db()
         
         last_daily = db[uid].get("last_daily")
         now = datetime.datetime.now()
@@ -170,14 +202,14 @@ class Economia(commands.Cog):
         leveled_up, new_level = self.add_xp(interaction.user.id, bonus_xp)
         
         # Recarregar DB e atualizar last_daily e streak
-        db = self.bot.db()
+        db = load_economia_db()
         db[uid]["last_daily"] = now.isoformat()
         db[uid]["daily_streak"] = streak
         
         # Atualizar progresso de missões
         self.update_missao_progresso(db, uid, "daily", 1)
         
-        self.bot.save_db(db)
+        save_economia_db(db)
         
         embed = discord.Embed(
             title="🎁 Daily Coletado!",
@@ -202,7 +234,7 @@ class Economia(commands.Cog):
     @app_commands.command(name="mine", description="Mine e ganhe almas! (Cooldown: 60s)")
     async def mine(self, interaction: discord.Interaction):
         uid = self.ensure_user(interaction.user.id)
-        db = self.bot.db()
+        db = load_economia_db()
         
         last_mine = db[uid].get("last_mine")
         now = datetime.datetime.now()
@@ -250,14 +282,14 @@ class Economia(commands.Cog):
         leveled_up, new_level = self.add_xp(interaction.user.id, bonus_xp)
         
         # Recarregar DB e atualizar last_mine e streak
-        db = self.bot.db()
+        db = load_economia_db()
         db[uid]["last_mine"] = now.isoformat()
         db[uid]["mine_streak"] = streak
         
         # Atualizar progresso de missões
         self.update_missao_progresso(db, uid, "mine", 1)
         
-        self.bot.save_db(db)
+        save_economia_db(db)
         
         # Emojis aleatórios para a mineração
         mine_emojis = ["⛏️", "🔨", "<:alma:1443647166399909998>", "⚒️", "🪨"]
@@ -291,7 +323,7 @@ class Economia(commands.Cog):
     async def balance(self, interaction: discord.Interaction, membro: discord.Member = None):
         membro = membro or interaction.user
         uid = self.ensure_user(membro.id)
-        db = self.bot.db()
+        db = load_economia_db()
         
         souls = db[uid].get("soul", 0)
         xp = db[uid].get("xp", 0)
@@ -327,7 +359,7 @@ class Economia(commands.Cog):
 
     @app_commands.command(name="top-souls", description="Ranking dos mais ricos em almas")
     async def top_souls(self, interaction: discord.Interaction):
-        db = self.bot.db()
+        db = load_economia_db()
         
         ranking_items = []
         for uid, data in db.items():
@@ -375,7 +407,7 @@ class Economia(commands.Cog):
 
     @app_commands.command(name="top-level", description="Ranking dos maiores níveis")
     async def top_level(self, interaction: discord.Interaction):
-        db = self.bot.db()
+        db = load_economia_db()
         
         ranking_items = []
         for uid, data in db.items():
@@ -426,7 +458,7 @@ class Economia(commands.Cog):
     @app_commands.command(name="missoes", description="Veja suas missões disponíveis")
     async def missoes(self, interaction: discord.Interaction):
         uid = self.ensure_user(interaction.user.id)
-        db = self.bot.db()
+        db = load_economia_db()
         
         # Tipos de missões disponíveis
         tipos_missoes = {
@@ -474,7 +506,7 @@ class Economia(commands.Cog):
                 missao["progresso"] = 0
                 missoes_ativas.append(missao)
             db[uid]["missoes"] = missoes_ativas
-            self.bot.save_db(db)
+            save_economia_db(db)
         
         embed = discord.Embed(
             title="📋 Suas Missões",
@@ -516,7 +548,7 @@ class Economia(commands.Cog):
             return
         
         uid = self.ensure_user(interaction.user.id)
-        db = self.bot.db()
+        db = load_economia_db()
         
         missoes_ativas = db[uid].get("missoes", [])
         
@@ -551,7 +583,7 @@ class Economia(commands.Cog):
         missoes_completas.append(missao.get("tipo", "unknown"))
         db[uid]["missoes"] = missoes_ativas
         db[uid]["missoes_completas"] = missoes_completas
-        self.bot.save_db(db)
+        save_economia_db(db)
         
         embed = discord.Embed(
             title="🎉 Missão Reivindicada!",
@@ -573,7 +605,7 @@ class Economia(commands.Cog):
     @app_commands.command(name="caça", description="Caçe almas na floresta escura! (Cooldown: 2min)")
     async def caca(self, interaction: discord.Interaction):
         uid = self.ensure_user(interaction.user.id)
-        db = self.bot.db()
+        db = load_economia_db()
         
         last_caca = db[uid].get("last_caca")
         now = datetime.datetime.now()
@@ -647,10 +679,10 @@ class Economia(commands.Cog):
         leveled_up, new_level = self.add_xp(interaction.user.id, bonus_xp)
         
         # Recarregar DB e atualizar last_caca e streak
-        db = self.bot.db()
+        db = load_economia_db()
         db[uid]["last_caca"] = now.isoformat()
         db[uid]["caca_streak"] = streak
-        self.bot.save_db(db)
+        save_economia_db(db)
         
         # Embed de resultado
         embed_resultado = discord.Embed(
@@ -681,7 +713,7 @@ class Economia(commands.Cog):
     @app_commands.command(name="caça-longa", description="Inicie uma caçada longa de 12 horas por almas valiosas!")
     async def caca_longa(self, interaction: discord.Interaction):
         uid = self.ensure_user(interaction.user.id)
-        db = self.bot.db()
+        db = load_economia_db()
         
         # Verificar se já está em uma caça longa
         caca_longa = db[uid].get("caca_longa_ativa")
@@ -719,7 +751,7 @@ class Economia(commands.Cog):
             "fim": fim_caca.isoformat(),
             "channel_id": interaction.channel_id
         }
-        self.bot.save_db(db)
+        save_economia_db(db)
         
         embed = discord.Embed(
             title="🌲 Caça Longa Iniciada!",
@@ -740,7 +772,7 @@ class Economia(commands.Cog):
     async def processar_caca_longa(self, user_id: int, channel_id: int = None):
         """Processa uma caça longa concluída"""
         uid = self.ensure_user(user_id)
-        db = self.bot.db()
+        db = load_economia_db()
         
         caca_longa = db[uid].get("caca_longa_ativa")
         if not caca_longa:
@@ -773,9 +805,9 @@ class Economia(commands.Cog):
         leveled_up, new_level = self.add_xp(user_id, bonus_xp)
         
         # Recarregar DB e remover caça longa ativa
-        db = self.bot.db()
+        db = load_economia_db()
         del db[uid]["caca_longa_ativa"]
-        self.bot.save_db(db)
+        save_economia_db(db)
         
         # Criar embed de resultado
         embed = discord.Embed(
@@ -822,7 +854,7 @@ class Economia(commands.Cog):
         if not self.bot.is_ready():
             return
         
-        db = self.bot.db()
+        db = load_economia_db()
         agora = datetime.datetime.now()
         
         for uid, data in db.items():
