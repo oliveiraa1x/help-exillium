@@ -184,7 +184,7 @@ class Economia(commands.Cog):
             description=f"**{interaction.user.mention}** coletou sua recompensa diária!",
             color=discord.Color.gold()
         )
-        embed.add_field(name="💰 Almas ganhas", value=f"**{bonus_souls}** 🔮", inline=True)
+        embed.add_field(name="💰 Almas ganhas", value=f"**{bonus_souls}** <:alma:1443647166399909998>", inline=True)
         embed.add_field(name="⭐ XP ganho", value=f"**{bonus_xp}** XP", inline=True)
         embed.add_field(name="🔥 Streak", value=f"**{streak}** dias consecutivos", inline=True)
         
@@ -239,7 +239,7 @@ class Economia(commands.Cog):
         if rare_chance < 0.05:  # 5% de chance
             rare_bonus = random.randint(100, 300)
             bonus_souls += rare_bonus
-            rare_message = "🔮 **Você encontrou uma gema rara!**"
+            rare_message = "<:alma:1443647166399909998> **Você encontrou uma gema rara!**"
         elif rare_chance < 0.15:  # 10% de chance
             rare_bonus = random.randint(50, 150)
             bonus_souls += rare_bonus
@@ -260,7 +260,7 @@ class Economia(commands.Cog):
         self.bot.save_db(db)
         
         # Emojis aleatórios para a mineração
-        mine_emojis = ["⛏️", "🔨", "🔮", "⚒️", "🪨"]
+        mine_emojis = ["⛏️", "🔨", "<:alma:1443647166399909998>", "⚒️", "🪨"]
         mine_emoji = random.choice(mine_emojis)
         
         embed = discord.Embed(
@@ -268,7 +268,7 @@ class Economia(commands.Cog):
             description=f"**{interaction.user.mention}** minerou com sucesso!",
             color=discord.Color.blue()
         )
-        embed.add_field(name="💰 Almas ganhas", value=f"**{bonus_souls}** 🔮", inline=True)
+        embed.add_field(name="💰 Almas ganhas", value=f"**{bonus_souls}** <:alma:1443647166399909998>", inline=True)
         embed.add_field(name="⭐ XP ganho", value=f"**{bonus_xp}** XP", inline=True)
         embed.add_field(name="🔥 Streak", value=f"**{streak}** minerações", inline=True)
         
@@ -306,7 +306,7 @@ class Economia(commands.Cog):
             title=f"💰 Carteira de {membro.display_name}",
             color=discord.Color.green()
         )
-        embed.add_field(name="🔮 Almas", value=f"**{souls:,}** 🔮", inline=True)
+        embed.add_field(name="<:alma:1443647166399909998> Almas", value=f"**{souls:,}** 🔮", inline=True)
         embed.add_field(name="⭐ Nível", value=f"**{level}**", inline=True)
         embed.add_field(name="📊 XP", value=f"**{xp:,}** XP", inline=True)
         embed.add_field(
@@ -367,7 +367,7 @@ class Economia(commands.Cog):
                         nome = f"Usuário {uid}"
                 embed.add_field(
                     name=f"{pos}. {nome}",
-                    value=f"**{souls:,}** 🔮",
+                    value=f"**{souls:,}** <:alma:1443647166399909998>",
                     inline=False
                 )
         
@@ -491,7 +491,7 @@ class Economia(commands.Cog):
                 name=f"{status} {idx}. {missao['nome']}",
                 value=f"{missao['descricao']}\n"
                       f"Progresso: **{progresso}/{objetivo}**\n"
-                      f"Recompensa: **{missao['recompensa_soul']}** 🔮 + **{missao['recompensa_xp']}** XP",
+                      f"Recompensa: **{missao['recompensa_soul']}** <:alma:1443647166399909998> + **{missao['recompensa_xp']}** XP",
                 inline=False
             )
         
@@ -558,7 +558,7 @@ class Economia(commands.Cog):
             description=f"Você reivindicou a recompensa da missão **{missao['nome']}**!",
             color=discord.Color.green()
         )
-        embed.add_field(name="💰 Almas ganhas", value=f"**{recompensa_soul}** 🔮", inline=True)
+        embed.add_field(name="💰 Almas ganhas", value=f"**{recompensa_soul}** <:alma:1443647166399909998>", inline=True)
         embed.add_field(name="⭐ XP ganho", value=f"**{recompensa_xp}** XP", inline=True)
         
         if leveled_up:
@@ -658,7 +658,7 @@ class Economia(commands.Cog):
             description=f"**{interaction.user.mention}** retornou da floresta escura!",
             color=discord.Color.dark_purple()
         )
-        embed_resultado.add_field(name="💰 Almas ganhas", value=f"**{bonus_souls}** 🔮", inline=True)
+        embed_resultado.add_field(name="💰 Almas ganhas", value=f"**{bonus_souls}** <:alma:1443647166399909998>", inline=True)
         embed_resultado.add_field(name="⭐ XP ganho", value=f"**{bonus_xp}** XP", inline=True)
         embed_resultado.add_field(name="🔥 Streak", value=f"**{streak}** caçadas", inline=True)
         
@@ -783,7 +783,7 @@ class Economia(commands.Cog):
             description=f"<@{user_id}> retornou da floresta escura após 12 horas de caçada!",
             color=discord.Color.gold()
         )
-        embed.add_field(name="💰 Almas ganhas", value=f"**{bonus_souls}** 🔮", inline=True)
+        embed.add_field(name="💰 Almas ganhas", value=f"**{bonus_souls}** <:alma:1443647166399909998>", inline=True)
         embed.add_field(name="⭐ XP ganho", value=f"**{bonus_xp}** XP", inline=True)
         
         if rare_message:
