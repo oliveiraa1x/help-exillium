@@ -1,3 +1,5 @@
+# economia.py  cog de sistema de economia para discord.py com banco de dados simples
+
 import discord
 import random
 import datetime
