@@ -3,13 +3,14 @@ import importlib
 import json
 import os
 import random
+import discord
+import asyncio
 from itertools import cycle
 from pathlib import Path
-
-import discord
 from discord import app_commands
 from discord.ext import commands, tasks
 
+bot = commands.Bot(command_prefix="!", intents=discord.Intents.all())
 
 def _resolve_load_dotenv():
     try:
@@ -132,9 +133,7 @@ def resolve_token() -> str:
 
     return token
 
-
 TOKEN = resolve_token()
-
 
 # ==============================
 # Cria o BOT e variáveis globais
@@ -152,7 +151,6 @@ except Exception:
 
 # Track last presence to avoid unnecessary change_presence calls
 bot._last_presence: str | None = None
-
 bot.call_times: dict[int, datetime.datetime] = {}
 bot.active_users: set[int] = set()
 bot.db = load_db
@@ -700,7 +698,15 @@ async def setup_hook():
     update_status.start()
     await bot.tree.sync()
 
+@bot.event
+async def on_ready():
+    print(f"Bot online como {bot.user}")
 
+async def main():
+    await bot.load_extension("voice_timer")
+    await bot.start("SEU_TOKEN_AQUI")
+
+asyncio.run(main())
 
 @bot.event
 async def on_ready():
