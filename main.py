@@ -700,19 +700,12 @@ async def setup_hook():
     update_status.start()
     await bot.tree.sync()
 
-@bot.event
-async def on_ready():
-    print(f"Bot online como {bot.user}")
-
 async def main():
     await bot.load_extension("voice_timer")
     await bot.start("SEU_TOKEN_AQUI")
 
-asyncio.run(main())
-
 @bot.event
 async def on_ready():
     print(f"✅ Bot conectado como {bot.user} (ID: {bot.user.id})")
-
 
 bot.run(TOKEN)
