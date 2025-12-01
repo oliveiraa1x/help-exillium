@@ -1,64 +1,66 @@
 import discord
-from discord.ext import commands
-import json
-import os
+from discord.ext import commands, tasks
 import time
+import asyncio
 
-DATA_FILE = "call_tempo.json"
-
-def load_data():
-    if not os.path.exists(DATA_FILE):
-        return {}
-    with open(DATA_FILE, "r") as f:
-        return json.load(f)
-
-def save_data(data):
-    with open(DATA_FILE, "w") as f:
-        json.dump(data, f, indent=4)
-
-def format_time(seconds):
-    hours = seconds // 3600
-    minutes = (seconds % 3600) // 60
-    sec = seconds % 60
-    return f"{hours}:{minutes:02d}:{sec:02d}"
-
-
-class CallTempo(commands.Cog):
+class VoiceChannelTimer(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
+        self.active_channels = {}  # {channel_id: start_time}
+        self.update_channel_names.start()
 
-    # Detecta entrada/saída da call
+    def format_time(self, seconds):
+        hours = seconds // 3600
+        minutes = (seconds % 3600) // 60
+        sec = seconds % 60
+        return f"{hours}:{minutes:02d}:{sec:02d}"
+
     @commands.Cog.listener()
     async def on_voice_state_update(self, member, before, after):
-        data = load_data()
 
-        # Entrou na call
+        # Entrou em um canal
         if before.channel is None and after.channel is not None:
-            data[str(member.id)] = int(time.time())   # salva timestamp
-            save_data(data)
+            channel = after.channel
 
-        # Saiu da call
-        elif before.channel is not None and after.channel is None:
-            if str(member.id) in data:
-                del data[str(member.id)]
-                save_data(data)
+            # Se o canal ainda não está sendo contado, inicia
+            if channel.id not in self.active_channels:
+                self.active_channels[channel.id] = int(time.time())
 
+        # Saiu de um canal
+        if before.channel is not None and after.channel is None:
+            channel = before.channel
 
-    # Comando para ver o tempo em call
-    @commands.command()
-    async def tempo(self, ctx):
-        data = load_data()
+            # Se ficou vazio, remove o contador
+            if len(channel.members) == 0:
+                if channel.id in self.active_channels:
+                    del self.active_channels[channel.id]
+                # Volta nome ao original
+                try:
+                    await channel.edit(name=channel.name.split(" —")[0])
+                except:
+                    pass
 
-        user_id = str(ctx.author.id)
+    @tasks.loop(seconds=5)  # atualiza a cada 5 segundos
+    async def update_channel_names(self):
+        for channel_id, start_time in list(self.active_channels.items()):
+            channel = self.bot.get_channel(channel_id)
 
-        if user_id not in data:
-            return await ctx.send("❌ Você não está em uma call no momento.")
+            if channel and isinstance(channel, discord.VoiceChannel):
+                elapsed = int(time.time()) - start_time
+                formatted = self.format_time(elapsed)
 
-        seconds = int(time.time()) - data[user_id]
-        formatted = format_time(seconds)
+                base_name = channel.name.split(" —")[0]  # nome original sem timer
 
-        await ctx.send(f"⏱️ Você está na call há **{formatted}**!")
+                try:
+                    await channel.edit(name=f"{base_name} — {formatted}")
+                except discord.Forbidden:
+                    pass
+                except Exception as e:
+                    print("Erro ao editar canal:", e)
 
+    @update_channel_names.before_loop
+    async def before_update(self):
+        await self.bot.wait_until_ready()
 
 async def setup(bot):
-    await bot.add_cog(CallTempo(bot))
+    await bot.add_cog(VoiceChannelTimer(bot))
