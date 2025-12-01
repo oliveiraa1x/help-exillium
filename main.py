@@ -152,11 +152,11 @@ except Exception:
     pass
 
 # Track last presence to avoid unnecessary change_presence calls
-bot._last_presence: str | None = None
-bot.call_times: dict[int, datetime.datetime] = {}
-bot.active_users: set[int] = set()
-bot.db = load_db
-bot.save_db = save_db
+# bot._last_presence: str | None = None
+# bot.call_times: dict[int, datetime.datetime] = {}
+# bot.active_users: set[int] = set()
+# bot.db = load_db
+# bot.save_db = save_db
 
 status_messages = [
     "Bot in Dev... 🚧",
