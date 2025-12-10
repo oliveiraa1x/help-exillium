@@ -359,6 +359,118 @@ class Economia(commands.Cog):
         embed.set_footer(text="Aeternum Exilium • Sistema de Economia")
         await interaction.response.send_message(embed=embed)
 
+    @app_commands.command(name="pay", description="Pague outro membro. Requer confirmação do destinatário.")
+    @app_commands.describe(membro="Membro destinatário", valor="Quantidade de almas a enviar")
+    async def pay(self, interaction: discord.Interaction, membro: discord.Member, valor: int):
+        # Validações iniciais
+        if membro.bot:
+            await interaction.response.send_message("❌ Você não pode enviar almas para bots.", ephemeral=True)
+            return
+
+        if membro.id == interaction.user.id:
+            await interaction.response.send_message("❌ Você não pode enviar almas para si mesmo.", ephemeral=True)
+            return
+
+        if valor <= 0:
+            await interaction.response.send_message("❌ O valor deve ser maior que zero.", ephemeral=True)
+            return
+
+        uid = self.ensure_user(interaction.user.id)
+        db = load_economia_db()
+        balance = db.get(uid, {}).get("soul", 0)
+
+        if balance < valor:
+            await interaction.response.send_message("❌ Saldo insuficiente.", ephemeral=True)
+            return
+
+        # Criar view de confirmação para o destinatário
+        class TransferConfirmView(discord.ui.View):
+            def __init__(self, bot, sender_id: int, recipient_id: int, amount: int, timeout: int = 120):
+                super().__init__(timeout=timeout)
+                self.bot = bot
+                self.sender_id = sender_id
+                self.recipient_id = recipient_id
+                self.amount = amount
+                self.confirmed = False
+
+            @discord.ui.button(label="Confirmar Transferência", style=discord.ButtonStyle.success)
+            async def confirm(self, interaction_button: discord.Interaction, button: discord.ui.Button):
+                if interaction_button.user.id != self.recipient_id:
+                    await interaction_button.response.send_message("Somente o destinatário pode confirmar esta transferência.", ephemeral=True)
+                    return
+
+                # Recarregar DB e checar saldo do remetente novamente
+                db_local = load_economia_db()
+                sender_uid = str(self.sender_id)
+                recipient_uid = str(self.recipient_id)
+
+                if sender_uid not in db_local:
+                    await interaction_button.response.send_message("❌ Dados do remetente não encontrados.", ephemeral=True)
+                    self.disable_all_items()
+                    await interaction_button.message.edit(view=self)
+                    return
+
+                if db_local[sender_uid].get("soul", 0) < self.amount:
+                    await interaction_button.response.send_message("❌ Transferência falhou: remetente não tem saldo suficiente.", ephemeral=True)
+                    self.disable_all_items()
+                    await interaction_button.message.edit(view=self)
+                    return
+
+                # Garantir que o destinatário possui entrada no DB
+                if recipient_uid not in db_local:
+                    db_local[recipient_uid] = {
+                        "soul": 0,
+                        "xp": 0,
+                        "level": 1,
+                        "last_daily": None,
+                        "last_mine": None,
+                        "mine_streak": 0,
+                        "daily_streak": 0,
+                        "last_caca": None,
+                        "caca_streak": 0,
+                        "caca_longa_ativa": None,
+                        "missoes": [],
+                        "missoes_completas": []
+                    }
+
+                # Efetuar transferência
+                db_local[sender_uid]["soul"] = db_local[sender_uid].get("soul", 0) - self.amount
+                db_local[recipient_uid]["soul"] = db_local[recipient_uid].get("soul", 0) + self.amount
+                save_economia_db(db_local)
+
+                self.confirmed = True
+                self.disable_all_items()
+                try:
+                    await interaction_button.response.send_message(f"✅ Transferência de **{self.amount:,}** almas confirmada por {interaction_button.user.mention}.")
+                except:
+                    pass
+                await interaction_button.message.edit(view=self)
+
+        view = TransferConfirmView(self.bot, interaction.user.id, membro.id, valor)
+
+        embed = discord.Embed(
+            title="🔁 Pedido de Transferência",
+            description=f"{interaction.user.mention} quer enviar **{valor:,}** almas para {membro.mention}.",
+            color=discord.Color.blurple()
+        )
+        embed.set_footer(text="Clique em 'Confirmar Transferência' para aceitar. (2 minutos)")
+
+        await interaction.response.send_message(embed=embed, view=view)
+
+        # Aguardar confirmação; se não confirmado em tempo, desabilitar botões e notificar remetente
+        await view.wait()
+
+        if not view.confirmed:
+            try:
+                view.disable_all_items()
+                await interaction.edit_original_response(view=view)
+            except:
+                pass
+            try:
+                await interaction.followup.send("❌ A transferência não foi confirmada a tempo.", ephemeral=True)
+            except:
+                pass
+
     @app_commands.command(name="top-souls", description="Ranking dos mais ricos em almas")
     async def top_souls(self, interaction: discord.Interaction):
         db = load_economia_db()

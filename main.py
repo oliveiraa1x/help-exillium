@@ -157,6 +157,14 @@ except Exception:
 # bot.active_users: set[int] = set()
 # bot.db = load_db
 # bot.save_db = save_db
+# Inicializar estruturas de dados em memória e ligar às funções de persistência
+bot._last_presence = None
+bot.call_times = {}
+bot.active_users = set()
+bot.db = load_db
+bot.save_db = save_db
+bot.load_top_tempo_db = load_top_tempo_db
+bot.save_top_tempo_db = save_top_tempo_db
 
 status_messages = [
     "Bot in Dev... 🚧",
@@ -648,9 +656,25 @@ async def on_voice_state_update(member, before, after):
         # Atualizar progresso de missão de call (no banco de economia)
         from cogs.economia import load_economia_db, save_economia_db
         economia_db = load_economia_db()
-        if uid in economia_db:
-            update_missao_progresso(economia_db, uid, "call", elapsed)
-            save_economia_db(economia_db)
+        # Garantir que o usuário exista no banco de economia antes de atualizar missões
+        if uid not in economia_db:
+            economia_db[uid] = {
+                "soul": 0,
+                "xp": 0,
+                "level": 1,
+                "last_daily": None,
+                "last_mine": None,
+                "mine_streak": 0,
+                "daily_streak": 0,
+                "last_caca": None,
+                "caca_streak": 0,
+                "caca_longa_ativa": None,
+                "missoes": [],
+                "missoes_completas": []
+            }
+
+        update_missao_progresso(economia_db, uid, "call", elapsed)
+        save_economia_db(economia_db)
 
 
 @bot.event

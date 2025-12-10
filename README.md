@@ -50,6 +50,8 @@ python main.py
 | `/top-souls`        | Ranking de almas                      | -        |
 | `/top-level`        | Ranking de níveis                     | -        |
 
+| `/pay @membro valor` | Enviar almas para outro membro (requer confirmação do destinatário) | - |
+
 ### 👤 Perfil
 
 | Comando              | Descrição                            |
@@ -204,6 +206,25 @@ O perfil mostra automaticamente seu ranking em:
 - Bot precisa de permissões adequadas no servidor
 - Banco de dados criado automaticamente
 - XP ganha automaticamente ao enviar mensagens (cooldown: 30s)
+
+---
+
+## 🆕 Novidades / Alterações Recentes
+
+- `/pay @membro valor`: novo comando para enviar almas para outro membro. O envio só é concluído quando o destinatário confirma a transferência clicando no botão de confirmação enviado na mensagem. Isso evita envios não autorizados e permite revalidação de saldo no momento da confirmação.
+- Persistência de tempo em call: corrigimos a inicialização das estruturas em memória e garantimos que o tempo total em call seja salvo em `data/top_tempo.json` quando usuários saem da call. Usuários novos agora têm registro criado automaticamente no banco de economia (`data/economia.json`) para que missões relacionadas à call sejam atualizadas corretamente.
+- Revalidação de saldo no `/pay`: o saldo do remetente é rechecado no momento em que o destinatário confirma, evitando condições de corrida.
+
+-- Testes rápidos:
+
+1. Reinicie o bot:
+```powershell
+python main.py
+```
+2. Entre/saia de uma call para verificar que `data/top_tempo.json` é atualizado.
+3. Use `/pay @Usuario 100` e peça para o destinatário confirmar clicando no botão; verifique `data/economia.json` para ver débito/crédito.
+
+Se quiser, posso adicionar persistência de transferências pendentes (para sobreviver a reinícios antes da confirmação) ou um botão de cancelar para o remetente.
 
 ---
 
