@@ -251,6 +251,7 @@ async def slash_help(interaction: discord.Interaction):
     embed.add_field(name="📝 Sobre Mim", value="/set-sobre <texto> - Define seu 'Sobre Mim'", inline=False)
     embed.add_field(name="🎧 Call", value="/top-tempo - Ranking de tempo em call\n/callstatus - Seu tempo atual em call", inline=False)
     embed.add_field(name="💰 Economia", value="/daily - Recompensa diária\n/mine - Minerar e ganhar almas\n/caça - Caça rápida (5s)\n/caça-longa - Caça longa (12h)\n/balance [membro] - Ver saldo de almas\n/top-souls - Ranking de almas\n/top-level - Ranking de níveis", inline=False)
+    embed.add_field(name="⚔️ RPG Combate", value="/combate - Inicie um combate contra um mob aleatório!", inline=False)
     embed.add_field(name="📋 Missões", value="/missoes - Ver suas missões\n/claim-missao <número> - Reivindicar recompensa", inline=False)
     embed.add_field(name="ℹ️ Info", value="/uptime - Tempo online do bot", inline=False)
     await interaction.response.send_message(embed=embed, ephemeral=True)
@@ -720,6 +721,14 @@ async def setup_hook():
         print("Frase carregado com sucesso!")
     except Exception as e:
         print(f"Erro ao carregar cog frase: {e}")
+
+    # Carregar RPG Combate
+    try:
+        rpg_combate = importlib.import_module("cogs.rpg_combate")
+        await rpg_combate.setup(bot)
+        print("RPG Combate carregado com sucesso!")
+    except Exception as e:
+        print(f"Erro ao carregar cog RPG Combate: {e}")
 
     update_status.start()
     await bot.tree.sync()
