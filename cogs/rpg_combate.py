@@ -95,7 +95,7 @@ MOBS = {
 # View com os Botões de Combate
 # ==============================
 class CombateButtons(discord.ui.View):
-    def __init__(self, user_id: int, mob_type: str, timeout: float = 60.0):
+    def __init__(self, user_id: int, mob_type: str, timeout: float = 600.0):
         super().__init__(timeout=timeout)
         self.user_id = user_id
         self.mob_type = mob_type
@@ -129,6 +129,9 @@ class CombateButtons(discord.ui.View):
         if not await self.interaction_check(interaction):
             return
         
+        # Defer a interação imediatamente
+        await interaction.response.defer()
+        
         # Jogador ataca
         dano_jogador = random.randint(1, 2)
         self.mob_vida -= dano_jogador
@@ -140,7 +143,6 @@ class CombateButtons(discord.ui.View):
             return
         
         # Mob ataca
-        await interaction.response.defer()
         ataque_mob = random.choice(self.mob["ataques"])
         dano_mob = random.randint(1, 2)
         self.player_vida -= dano_mob
@@ -158,11 +160,13 @@ class CombateButtons(discord.ui.View):
         if not await self.interaction_check(interaction):
             return
         
+        # Defer a interação imediatamente
+        await interaction.response.defer()
+        
         # Jogador se defende
         self.historico.append(f"🛡️ Você se protegeu com seu **Escudo**! Reduzindo dano em 1.")
         
         # Mob ataca
-        await interaction.response.defer()
         ataque_mob = random.choice(self.mob["ataques"])
         dano_mob = max(0, random.randint(1, 2) - 1)  # Reduz 1 de dano
         self.player_vida -= dano_mob
@@ -180,6 +184,9 @@ class CombateButtons(discord.ui.View):
         if not await self.interaction_check(interaction):
             return
         
+        # Defer a interação imediatamente
+        await interaction.response.defer()
+        
         # Jogador faz ataque duplo
         dano_jogador = random.randint(2, 3)
         self.mob_vida -= dano_jogador
@@ -191,7 +198,6 @@ class CombateButtons(discord.ui.View):
             return
         
         # Mob contra-ataca
-        await interaction.response.defer()
         ataque_mob = random.choice(self.mob["ataques"])
         dano_mob = random.randint(1, 2)
         self.player_vida -= dano_mob
@@ -207,7 +213,11 @@ class CombateButtons(discord.ui.View):
     async def atualizar_combate(self, interaction: discord.Interaction):
         """Atualiza a mensagem de combate"""
         embed = self.criar_embed_combate()
-        await interaction.edit_original_response(embed=embed, view=self)
+        try:
+            await interaction.edit_original_response(embed=embed, view=self)
+        except discord.NotFound:
+            # Se a mensagem foi deletada ou expirou, usar follow_up
+            await interaction.followup.send(embed=embed, view=self)
 
     def criar_embed_combate(self) -> discord.Embed:
         """Cria o embed com o status do combate"""
@@ -274,7 +284,11 @@ class CombateButtons(discord.ui.View):
         
         # Remove os buttons
         self.clear_items()
-        await interaction.edit_original_response(embed=embed, view=self)
+        
+        try:
+            await interaction.edit_original_response(embed=embed, view=self)
+        except discord.NotFound:
+            await interaction.followup.send(embed=embed, view=self)
 
     async def enviar_resultado_derrota(self, interaction: discord.Interaction):
         """Envia o resultado da derrota"""
@@ -302,7 +316,11 @@ class CombateButtons(discord.ui.View):
         
         # Remove os buttons
         self.clear_items()
-        await interaction.edit_original_response(embed=embed, view=self)
+        
+        try:
+            await interaction.edit_original_response(embed=embed, view=self)
+        except discord.NotFound:
+            await interaction.followup.send(embed=embed, view=self)
 
 
 # ==============================
