@@ -28,89 +28,21 @@ load_dotenv = _resolve_load_dotenv()
 
 
 # ==============================
+# Importar funções de banco de dados do db.py centralizado
+# ==============================
+from db import (
+    load_db, save_db,
+    load_economia_db, save_economia_db,
+    load_perfil_db, save_perfil_db,
+    load_top_tempo_db, save_top_tempo_db,
+    sync_all_databases
+)
+
+# ==============================
 # Configurações básicas
 # ==============================
 BASE_DIR = Path(__file__).parent
-DATA_PATH = BASE_DIR / "data" / "db.json"
-PERFIL_DB_PATH = BASE_DIR / "data" / "perfil.json"
-TOP_TEMPO_DB_PATH = BASE_DIR / "data" / "top_tempo.json"
 CONFIG_PATH = BASE_DIR / "config.json"
-
-
-def ensure_data_file() -> None:
-    DATA_PATH.parent.mkdir(parents=True, exist_ok=True)
-    if not DATA_PATH.exists():
-        DATA_PATH.write_text("{}", encoding="utf-8")
-
-
-def load_db() -> dict:
-    ensure_data_file()
-    with DATA_PATH.open("r", encoding="utf-8") as fp:
-        try:
-            return json.load(fp)
-        except json.JSONDecodeError:
-            # Corrige arquivos corrompidos
-            return {}
-
-
-def save_db(data: dict) -> None:
-    ensure_data_file()
-    with DATA_PATH.open("w", encoding="utf-8") as fp:
-        json.dump(data, fp, ensure_ascii=False, indent=2)
-
-
-# ==============================
-# Sistema de Banco de Dados para Perfil
-# ==============================
-def ensure_perfil_db_file() -> None:
-    """Garante que o arquivo de banco de dados de perfil existe"""
-    PERFIL_DB_PATH.parent.mkdir(parents=True, exist_ok=True)
-    if not PERFIL_DB_PATH.exists():
-        PERFIL_DB_PATH.write_text("{}", encoding="utf-8")
-
-
-def load_perfil_db() -> dict:
-    """Carrega o banco de dados de perfil"""
-    ensure_perfil_db_file()
-    try:
-        with PERFIL_DB_PATH.open("r", encoding="utf-8") as fp:
-            return json.load(fp)
-    except json.JSONDecodeError:
-        return {}
-
-
-def save_perfil_db(data: dict) -> None:
-    """Salva o banco de dados de perfil"""
-    ensure_perfil_db_file()
-    with PERFIL_DB_PATH.open("w", encoding="utf-8") as fp:
-        json.dump(data, fp, ensure_ascii=False, indent=2)
-
-
-# ==============================
-# Sistema de Banco de Dados para Top Tempo
-# ==============================
-def ensure_top_tempo_db_file() -> None:
-    """Garante que o arquivo de banco de dados de top tempo existe"""
-    TOP_TEMPO_DB_PATH.parent.mkdir(parents=True, exist_ok=True)
-    if not TOP_TEMPO_DB_PATH.exists():
-        TOP_TEMPO_DB_PATH.write_text("{}", encoding="utf-8")
-
-
-def load_top_tempo_db() -> dict:
-    """Carrega o banco de dados de top tempo"""
-    ensure_top_tempo_db_file()
-    try:
-        with TOP_TEMPO_DB_PATH.open("r", encoding="utf-8") as fp:
-            return json.load(fp)
-    except json.JSONDecodeError:
-        return {}
-
-
-def save_top_tempo_db(data: dict) -> None:
-    """Salva o banco de dados de top tempo"""
-    ensure_top_tempo_db_file()
-    with TOP_TEMPO_DB_PATH.open("w", encoding="utf-8") as fp:
-        json.dump(data, fp, ensure_ascii=False, indent=2)
 
 
 def resolve_token() -> str:
@@ -655,7 +587,6 @@ async def on_voice_state_update(member, before, after):
         save_top_tempo_db(db)
         
         # Atualizar progresso de missão de call (no banco de economia)
-        from cogs.economia import load_economia_db, save_economia_db
         economia_db = load_economia_db()
         # Garantir que o usuário exista no banco de economia antes de atualizar missões
         if uid not in economia_db:

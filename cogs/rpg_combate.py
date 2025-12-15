@@ -7,34 +7,8 @@ from pathlib import Path
 from discord.ext import commands
 from discord import app_commands
 
-# ==============================
-# Sistema de Banco de Dados para Economia
-# ==============================
-ECONOMIA_DB_PATH = Path(__file__).parent.parent / "data" / "economia.json"
-
-
-def ensure_economia_db_file() -> None:
-    """Garante que o arquivo de banco de dados de economia existe"""
-    ECONOMIA_DB_PATH.parent.mkdir(parents=True, exist_ok=True)
-    if not ECONOMIA_DB_PATH.exists():
-        ECONOMIA_DB_PATH.write_text("{}", encoding="utf-8")
-
-
-def load_economia_db() -> dict:
-    """Carrega o banco de dados de economia"""
-    ensure_economia_db_file()
-    try:
-        with ECONOMIA_DB_PATH.open("r", encoding="utf-8") as fp:
-            return json.load(fp)
-    except json.JSONDecodeError:
-        return {}
-
-
-def save_economia_db(data: dict) -> None:
-    """Salva o banco de dados de economia"""
-    ensure_economia_db_file()
-    with ECONOMIA_DB_PATH.open("w", encoding="utf-8") as fp:
-        json.dump(data, fp, ensure_ascii=False, indent=2)
+# Importar funções de banco de dados do db.py centralizado
+from db import load_economia_db, save_economia_db
 
 
 def ensure_user_economia(user_id: int):

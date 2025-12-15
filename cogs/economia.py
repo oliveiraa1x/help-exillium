@@ -9,6 +9,9 @@ from pathlib import Path
 from discord import app_commands
 from discord.ext import commands, tasks
 
+# Importar funções de banco de dados do db.py centralizado
+from db import load_economia_db, save_economia_db
+
 
 def calculate_level(xp: int) -> int:
     """Calcula o nível baseado na XP"""
@@ -44,37 +47,6 @@ def get_xp_for_next_level(level: int) -> int:
     for _ in range(1, level):
         required_xp = int(required_xp * 1.5)
     return required_xp
-
-
-# ==============================
-# Sistema de Banco de Dados para Economia
-# ==============================
-ECONOMIA_DB_PATH = Path(__file__).parent.parent / "data" / "economia.json"
-
-
-def ensure_economia_db_file() -> None:
-    """Garante que o arquivo de banco de dados de economia existe"""
-    ECONOMIA_DB_PATH.parent.mkdir(parents=True, exist_ok=True)
-    if not ECONOMIA_DB_PATH.exists():
-        ECONOMIA_DB_PATH.write_text("{}", encoding="utf-8")
-
-
-def load_economia_db() -> dict:
-    """Carrega o banco de dados de economia"""
-    ensure_economia_db_file()
-    try:
-        with ECONOMIA_DB_PATH.open("r", encoding="utf-8") as fp:
-            return json.load(fp)
-    except json.JSONDecodeError:
-        # Se o arquivo estiver corrompido, retorna um dicionário vazio
-        return {}
-
-
-def save_economia_db(data: dict) -> None:
-    """Salva o banco de dados de economia"""
-    ensure_economia_db_file()
-    with ECONOMIA_DB_PATH.open("w", encoding="utf-8") as fp:
-        json.dump(data, fp, ensure_ascii=False, indent=2)
 
 
 class Economia(commands.Cog):

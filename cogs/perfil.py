@@ -6,41 +6,13 @@ from pathlib import Path
 from discord import app_commands
 from discord.ext import commands
 
+# Importar funções de banco de dados do db.py centralizado
+from db import load_perfil_db, save_perfil_db, load_top_tempo_db
+
 def format_time(seconds: int):
     hours, remainder = divmod(seconds, 3600)
     minutes, seconds = divmod(remainder, 60)
     return f"{hours}h {minutes}m {seconds}s"
-
-
-# ==============================
-# Sistema de Banco de Dados para Perfil e Tempo
-# ==============================
-PERFIL_DB_PATH = Path(__file__).parent.parent / "data" / "perfil.json"
-
-
-def ensure_perfil_db_file() -> None:
-    """Garante que o arquivo de banco de dados de perfil existe"""
-    PERFIL_DB_PATH.parent.mkdir(parents=True, exist_ok=True)
-    if not PERFIL_DB_PATH.exists():
-        PERFIL_DB_PATH.write_text("{}", encoding="utf-8")
-
-
-def load_perfil_db() -> dict:
-    """Carrega o banco de dados de perfil"""
-    ensure_perfil_db_file()
-    try:
-        with PERFIL_DB_PATH.open("r", encoding="utf-8") as fp:
-            return json.load(fp)
-    except json.JSONDecodeError:
-        # Se o arquivo estiver corrompido, retorna um dicionário vazio
-        return {}
-
-
-def save_perfil_db(data: dict) -> None:
-    """Salva o banco de dados de perfil"""
-    ensure_perfil_db_file()
-    with PERFIL_DB_PATH.open("w", encoding="utf-8") as fp:
-        json.dump(data, fp, ensure_ascii=False, indent=2)
 
 
 class Perfil(commands.Cog):
@@ -54,7 +26,6 @@ class Perfil(commands.Cog):
         """Calcula o ranking do usuário em uma categoria específica"""
         if category == "call":
             # Importar funções do top_tempo para ler o banco de dados correto
-            from cogs.top_tempo import load_top_tempo_db
             db = load_top_tempo_db()
         else:
             return None
@@ -132,7 +103,6 @@ class Perfil(commands.Cog):
         sobre = db[user_id].get("sobre") or "❌ Nenhum Sobre Mim definido ainda."
 
         # TEMPO TOTAL (ler do banco de top_tempo)
-        from cogs.top_tempo import load_top_tempo_db
         top_tempo_db = load_top_tempo_db()
         tempo_total = top_tempo_db.get(user_id, {}).get("tempo_total", 0)
         tempo_total_fmt = format_time(tempo_total)

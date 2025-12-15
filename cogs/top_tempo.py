@@ -5,41 +5,13 @@ from pathlib import Path
 from discord.ext import commands
 from discord import app_commands
 
+# Importar funções de banco de dados do db.py centralizado
+from db import load_top_tempo_db, save_top_tempo_db
+
 def format_time(sec):
     h, r = divmod(sec, 3600)
     m, s = divmod(r, 60)
     return f"{h}h {m}m {s}s"
-
-
-# ==============================
-# Sistema de Banco de Dados para Top Tempo
-# ==============================
-TOP_TEMPO_DB_PATH = Path(__file__).parent.parent / "data" / "top_tempo.json"
-
-
-def ensure_top_tempo_db_file() -> None:
-    """Garante que o arquivo de banco de dados de top tempo existe"""
-    TOP_TEMPO_DB_PATH.parent.mkdir(parents=True, exist_ok=True)
-    if not TOP_TEMPO_DB_PATH.exists():
-        TOP_TEMPO_DB_PATH.write_text("{}", encoding="utf-8")
-
-
-def load_top_tempo_db() -> dict:
-    """Carrega o banco de dados de top tempo"""
-    ensure_top_tempo_db_file()
-    try:
-        with TOP_TEMPO_DB_PATH.open("r", encoding="utf-8") as fp:
-            return json.load(fp)
-    except json.JSONDecodeError:
-        # Se o arquivo estiver corrompido, retorna um dicionário vazio
-        return {}
-
-
-def save_top_tempo_db(data: dict) -> None:
-    """Salva o banco de dados de top tempo"""
-    ensure_top_tempo_db_file()
-    with TOP_TEMPO_DB_PATH.open("w", encoding="utf-8") as fp:
-        json.dump(data, fp, ensure_ascii=False, indent=2)
 
 
 class TopTempo(commands.Cog):
