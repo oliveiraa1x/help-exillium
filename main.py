@@ -477,16 +477,13 @@ async def update_status():
     base_status = next(status_cycle)
 
     if bot.active_users:
-        user_id = next(iter(bot.active_users))
-        start = bot.call_times.get(user_id, datetime.datetime.now())
-        tempo = format_elapsed(datetime.datetime.now() - start)
-        desired = f"{base_status} | {tempo} em call"
+        # Mostrar apenas a mensagem base do status (sem contar o tempo em call)
+        desired = base_status
         if getattr(bot, '_last_presence', None) != desired:
             try:
                 await bot.change_presence(activity=discord.Game(name=desired))
                 bot._last_presence = desired
             except Exception:
-                # Ignore errors (rate limits will be handled by Discord library)
                 pass
         return
 
@@ -563,6 +560,10 @@ def update_missao_progresso(db: dict, uid: str, tipo: str, quantidade: int = 1):
 
 @bot.event
 async def on_voice_state_update(member, before, after):
+    # Ignorar bots (inclui o próprio bot) para não contar tempo de bots
+    if getattr(member, "bot", False):
+        return
+
     joined_channel = after.channel and not before.channel
     left_channel = before.channel and not after.channel
 
@@ -661,7 +662,17 @@ async def setup_hook():
     except Exception as e:
         print(f"Erro ao carregar cog RPG Combate: {e}")
 
+    # Carregar Stay Voice
+    try:
+        stay_voice = importlib.import_module("cogs.stay_voice")
+        await stay_voice.setup(bot)
+        print("Stay Voice carregado com sucesso!")
+    except Exception as e:
+        print(f"Erro ao carregar cog Stay Voice: {e}")
+
     update_status.start()
+    
+    # Sincronizar comandos
     await bot.tree.sync()
 
 async def main():

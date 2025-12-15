@@ -64,6 +64,24 @@ def ensure_economia_db_file() -> None:
 def load_economia_db() -> dict:
     """Carrega o banco de dados de economia"""
     ensure_economia_db_file()
+    # Se MongoDB estiver configurado, carregar da coleção `economia`
+    if db is not None:
+        try:
+            coll = db.get_collection("economia")
+            result = {}
+            for doc in coll.find():
+                uid = str(doc.get("_id"))
+                # se o documento armazenou os dados em campo `data`, usar ele
+                if "data" in doc:
+                    result[uid] = doc["data"]
+                else:
+                    # remover _id e usar o restante
+                    tmp = {k: v for k, v in doc.items() if k != "_id"}
+                    result[uid] = tmp
+            return result
+        except Exception:
+            pass
+
     try:
         with ECONOMIA_DB_PATH.open("r", encoding="utf-8") as fp:
             return json.load(fp)
@@ -74,6 +92,21 @@ def load_economia_db() -> dict:
 def save_economia_db(data: dict) -> None:
     """Salva o banco de dados de economia"""
     ensure_economia_db_file()
+    # Se MongoDB estiver configurado, salvar em coleção `economia` (documento por usuário)
+    if db is not None:
+        try:
+            coll = db.get_collection("economia")
+            for uid, value in data.items():
+                # se value for dicionário, salvamos os campos diretamente
+                if isinstance(value, dict):
+                    coll.update_one({"_id": str(uid)}, {"$set": value}, upsert=True)
+                else:
+                    # valor simples: armazenar em campo `value`
+                    coll.update_one({"_id": str(uid)}, {"$set": {"value": value}}, upsert=True)
+            return
+        except Exception:
+            pass
+
     with ECONOMIA_DB_PATH.open("w", encoding="utf-8") as fp:
         json.dump(data, fp, ensure_ascii=False, indent=2)
 
@@ -91,6 +124,20 @@ def ensure_perfil_db_file() -> None:
 def load_perfil_db() -> dict:
     """Carrega o banco de dados de perfil"""
     ensure_perfil_db_file()
+    if db is not None:
+        try:
+            coll = db.get_collection("perfil")
+            result = {}
+            for doc in coll.find():
+                uid = str(doc.get("_id"))
+                if "data" in doc:
+                    result[uid] = doc["data"]
+                else:
+                    tmp = {k: v for k, v in doc.items() if k != "_id"}
+                    result[uid] = tmp
+            return result
+        except Exception:
+            pass
     try:
         with PERFIL_DB_PATH.open("r", encoding="utf-8") as fp:
             return json.load(fp)
@@ -101,6 +148,17 @@ def load_perfil_db() -> dict:
 def save_perfil_db(data: dict) -> None:
     """Salva o banco de dados de perfil"""
     ensure_perfil_db_file()
+    if db is not None:
+        try:
+            coll = db.get_collection("perfil")
+            for uid, value in data.items():
+                if isinstance(value, dict):
+                    coll.update_one({"_id": str(uid)}, {"$set": value}, upsert=True)
+                else:
+                    coll.update_one({"_id": str(uid)}, {"$set": {"value": value}}, upsert=True)
+            return
+        except Exception:
+            pass
     with PERFIL_DB_PATH.open("w", encoding="utf-8") as fp:
         json.dump(data, fp, ensure_ascii=False, indent=2)
 
@@ -118,6 +176,22 @@ def ensure_top_tempo_db_file() -> None:
 def load_top_tempo_db() -> dict:
     """Carrega o banco de dados de top tempo"""
     ensure_top_tempo_db_file()
+    if db is not None:
+        try:
+            coll = db.get_collection("top_tempo")
+            result = {}
+            for doc in coll.find():
+                uid = str(doc.get("_id"))
+                if "tempo_total" in doc:
+                    result[uid] = doc["tempo_total"]
+                elif "data" in doc:
+                    result[uid] = doc["data"]
+                else:
+                    tmp = {k: v for k, v in doc.items() if k != "_id"}
+                    result[uid] = tmp
+            return result
+        except Exception:
+            pass
     try:
         with TOP_TEMPO_DB_PATH.open("r", encoding="utf-8") as fp:
             return json.load(fp)
@@ -128,6 +202,20 @@ def load_top_tempo_db() -> dict:
 def save_top_tempo_db(data: dict) -> None:
     """Salva o banco de dados de top tempo"""
     ensure_top_tempo_db_file()
+    if db is not None:
+        try:
+            coll = db.get_collection("top_tempo")
+            for uid, value in data.items():
+                # Assume value é número (tempo_total)
+                if isinstance(value, (int, float)):
+                    coll.update_one({"_id": str(uid)}, {"$set": {"tempo_total": int(value)}}, upsert=True)
+                elif isinstance(value, dict):
+                    coll.update_one({"_id": str(uid)}, {"$set": value}, upsert=True)
+                else:
+                    coll.update_one({"_id": str(uid)}, {"$set": {"value": value}}, upsert=True)
+            return
+        except Exception:
+            pass
     with TOP_TEMPO_DB_PATH.open("w", encoding="utf-8") as fp:
         json.dump(data, fp, ensure_ascii=False, indent=2)
 
@@ -145,6 +233,13 @@ def ensure_db_file() -> None:
 def load_db() -> dict:
     """Carrega o banco de dados geral"""
     ensure_db_file()
+    if db is not None:
+        try:
+            coll = db.get_collection("db")
+            doc = coll.find_one({"_id": "db"})
+            return doc.get("data", {}) if doc else {}
+        except Exception:
+            pass
     try:
         with DB_JSON_PATH.open("r", encoding="utf-8") as fp:
             return json.load(fp)
@@ -155,6 +250,13 @@ def load_db() -> dict:
 def save_db(data: dict) -> None:
     """Salva o banco de dados geral"""
     ensure_db_file()
+    if db is not None:
+        try:
+            coll = db.get_collection("db")
+            coll.update_one({"_id": "db"}, {"$set": {"data": data}}, upsert=True)
+            return
+        except Exception:
+            pass
     with DB_JSON_PATH.open("w", encoding="utf-8") as fp:
         json.dump(data, fp, ensure_ascii=False, indent=2)
 

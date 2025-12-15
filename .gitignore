@@ -1,0 +1,9 @@
+# Ignore runtime JSON data so deploys don't overwrite live data
+data/*.json
+
+# Python
+__pycache__/
+*.py[cod]
+
+# Environment
+.env
