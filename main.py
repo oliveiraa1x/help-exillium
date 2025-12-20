@@ -123,6 +123,14 @@ def sync_all_databases() -> None:
 
 
 def resolve_token() -> str:
+    import os
+    
+    # Primeiro tenta variável de ambiente (para Square Cloud)
+    token = os.getenv("TOKEN")
+    if token:
+        return token
+    
+    # Depois tenta config.json (para desenvolvimento local)
     if CONFIG_PATH.exists():
         with CONFIG_PATH.open("r", encoding="utf-8") as fp:
             try:
@@ -134,7 +142,7 @@ def resolve_token() -> str:
             return token
 
     raise RuntimeError(
-        "TOKEN não encontrado. Configure o arquivo config.json com a chave TOKEN."
+        "TOKEN não encontrado. Configure a variável de ambiente TOKEN ou o arquivo config.json com a chave TOKEN."
     )
 
 TOKEN = resolve_token()
