@@ -5,8 +5,30 @@ from pathlib import Path
 from discord.ext import commands
 from discord import app_commands
 
-# Importar funções de banco de dados do db.py centralizado
-from db import load_top_tempo_db, save_top_tempo_db
+# ==============================
+# Funções de Banco de Dados
+# ==============================
+BASE_DIR = Path(__file__).parent.parent
+DATA_DIR = BASE_DIR / "data"
+TOP_TEMPO_DB_PATH = DATA_DIR / "top_tempo.json"
+
+def ensure_top_tempo_db_file() -> None:
+    DATA_DIR.mkdir(parents=True, exist_ok=True)
+    if not TOP_TEMPO_DB_PATH.exists():
+        TOP_TEMPO_DB_PATH.write_text("{}", encoding="utf-8")
+
+def load_top_tempo_db() -> dict:
+    ensure_top_tempo_db_file()
+    try:
+        with TOP_TEMPO_DB_PATH.open("r", encoding="utf-8") as fp:
+            return json.load(fp)
+    except json.JSONDecodeError:
+        return {}
+
+def save_top_tempo_db(data: dict) -> None:
+    ensure_top_tempo_db_file()
+    with TOP_TEMPO_DB_PATH.open("w", encoding="utf-8") as fp:
+        json.dump(data, fp, ensure_ascii=False, indent=2)
 
 def format_time(sec):
     h, r = divmod(sec, 3600)

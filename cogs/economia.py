@@ -1,16 +1,9 @@
-# economia.py  cog de sistema de economia para discord.py com banco de dados simples
-
 import discord
 import random
 import datetime
 import asyncio
-import json
-from pathlib import Path
 from discord import app_commands
 from discord.ext import commands, tasks
-
-# Importar funções de banco de dados do db.py centralizado
-from db import load_economia_db, save_economia_db
 
 
 def calculate_level(xp: int) -> int:
@@ -56,28 +49,117 @@ class Economia(commands.Cog):
         self.daily_cooldown = 86400  # 24 horas
         self.caca_cooldown = 120  # 2 minutos entre caças rápidas
         self.caca_longa_duration = 43200  # 12 horas em segundos
+        self.trabalho_cooldown = 3600  # 1 hora (3600 segundos) entre trabalhos
+        
+        # Definição dos trabalhos disponíveis
+        self.trabalhos = {
+            "programador": {
+                "nome": "💻 Programador",
+                "souls_min": 80,
+                "souls_max": 120,
+                "xp_min": 70,
+                "xp_max": 100,
+                "descricao": "Desenvolva sistemas e ganhe boas recompensas!"
+            },
+            "médico": {
+                "nome": "⚕️ Médico",
+                "souls_min": 100,
+                "souls_max": 150,
+                "xp_min": 80,
+                "xp_max": 120,
+                "descricao": "Cure os feridos e seja bem recompensado!"
+            },
+            "engenheiro": {
+                "nome": "🔧 Engenheiro",
+                "souls_min": 85,
+                "souls_max": 130,
+                "xp_min": 75,
+                "xp_max": 110,
+                "descricao": "Construa e projete grandes obras!"
+            },
+            "professor": {
+                "nome": "📚 Professor",
+                "souls_min": 70,
+                "souls_max": 110,
+                "xp_min": 90,
+                "xp_max": 130,
+                "descricao": "Ensine e ganhe muita experiência!"
+            },
+            "pintor": {
+                "nome": "🎨 Pintor",
+                "souls_min": 60,
+                "souls_max": 100,
+                "xp_min": 50,
+                "xp_max": 80,
+                "descricao": "Crie obras de arte e seja recompensado!"
+            },
+            "porteiro": {
+                "nome": "🚪 Porteiro",
+                "souls_min": 50,
+                "souls_max": 80,
+                "xp_min": 40,
+                "xp_max": 70,
+                "descricao": "Proteja a entrada e ganhe sua recompensa!"
+            },
+            "cozinheiro": {
+                "nome": "👨‍🍳 Cozinheiro",
+                "souls_min": 65,
+                "souls_max": 105,
+                "xp_min": 55,
+                "xp_max": 85,
+                "descricao": "Prepare deliciosas refeições!"
+            },
+            "motorista": {
+                "nome": "🚗 Motorista",
+                "souls_min": 55,
+                "souls_max": 90,
+                "xp_min": 45,
+                "xp_max": 75,
+                "descricao": "Transporte pessoas e mercadorias!"
+            },
+            "músico": {
+                "nome": "🎵 Músico",
+                "souls_min": 60,
+                "souls_max": 95,
+                "xp_min": 70,
+                "xp_max": 100,
+                "descricao": "Encante com sua música!"
+            },
+            "comerciante": {
+                "nome": "🏪 Comerciante",
+                "souls_min": 75,
+                "souls_max": 115,
+                "xp_min": 60,
+                "xp_max": 90,
+                "descricao": "Venda produtos e lucre!"
+            }
+        }
+        
         self.check_cacas_longas.start()
 
     def ensure_user(self, user_id: int):
-        """Garante que o usuário existe no banco de dados de economia"""
+        """Garante que o usuário existe no banco de dados"""
         uid = str(user_id)
-        db = load_economia_db()
+        db = self.bot.db()
         if uid not in db:
             db[uid] = {
+                "sobre": None,
+                "tempo_total": 0,
                 "soul": 0,
                 "xp": 0,
                 "level": 1,
                 "last_daily": None,
                 "last_mine": None,
                 "mine_streak": 0,
-                "daily_streak": 0,
                 "last_caca": None,
                 "caca_streak": 0,
                 "caca_longa_ativa": None,
+                "trabalho_atual": None,
+                "last_trabalho": None,
                 "missoes": [],
                 "missoes_completas": []
             }
-            save_economia_db(db)
+            self.bot.save_db(db)
         else:
             defaults = {
                 "soul": 0,
@@ -90,26 +172,28 @@ class Economia(commands.Cog):
                 "last_caca": None,
                 "caca_streak": 0,
                 "caca_longa_ativa": None,
+                "trabalho_atual": None,
+                "last_trabalho": None,
                 "missoes": [],
                 "missoes_completas": []
             }
             for key, value in defaults.items():
                 if key not in db[uid]:
                     db[uid][key] = value
-            save_economia_db(db)
+            self.bot.save_db(db)
         return uid
 
     def add_xp(self, user_id: int, amount: int):
         """Adiciona XP e atualiza o nível se necessário"""
         uid = self.ensure_user(user_id)
-        db = load_economia_db()
+        db = self.bot.db()
         
         old_level = db[uid].get("level", 1)
         db[uid]["xp"] = db[uid].get("xp", 0) + amount
         new_level = calculate_level(db[uid]["xp"])
         db[uid]["level"] = new_level
         
-        save_economia_db(db)
+        self.bot.save_db(db)
         
         # Retorna se subiu de nível
         return new_level > old_level, new_level
@@ -117,9 +201,9 @@ class Economia(commands.Cog):
     def add_soul(self, user_id: int, amount: int):
         """Adiciona almas ao usuário"""
         uid = self.ensure_user(user_id)
-        db = load_economia_db()
+        db = self.bot.db()
         db[uid]["soul"] = db[uid].get("soul", 0) + amount
-        save_economia_db(db)
+        self.bot.save_db(db)
     
     def update_missao_progresso(self, db: dict, uid: str, tipo: str, quantidade: int = 1):
         """Atualiza o progresso de missões"""
@@ -131,7 +215,7 @@ class Economia(commands.Cog):
     @app_commands.command(name="daily", description="Receba sua recompensa diária de almas e XP!")
     async def daily(self, interaction: discord.Interaction):
         uid = self.ensure_user(interaction.user.id)
-        db = load_economia_db()
+        db = self.bot.db()
         
         last_daily = db[uid].get("last_daily")
         now = datetime.datetime.now()
@@ -176,14 +260,14 @@ class Economia(commands.Cog):
         leveled_up, new_level = self.add_xp(interaction.user.id, bonus_xp)
         
         # Recarregar DB e atualizar last_daily e streak
-        db = load_economia_db()
+        db = self.bot.db()
         db[uid]["last_daily"] = now.isoformat()
         db[uid]["daily_streak"] = streak
         
         # Atualizar progresso de missões
         self.update_missao_progresso(db, uid, "daily", 1)
         
-        save_economia_db(db)
+        self.bot.save_db(db)
         
         embed = discord.Embed(
             title="🎁 Daily Coletado!",
@@ -205,10 +289,141 @@ class Economia(commands.Cog):
         embed.set_footer(text="Aeternum Exilium • Sistema de Economia")
         await interaction.response.send_message(embed=embed)
 
+    @app_commands.command(name="pay", description="Pague outro membro. Requer confirmação do destinatário.")
+    @app_commands.describe(membro="Membro destinatário", valor="Quantidade de almas a enviar")
+    async def pay(self, interaction: discord.Interaction, membro: discord.Member, valor: int):
+        # Validações iniciais
+        if membro.bot:
+            await interaction.response.send_message("❌ Você não pode enviar almas para bots.", ephemeral=True)
+            return
+
+        if membro.id == interaction.user.id:
+            await interaction.response.send_message("❌ Você não pode enviar almas para si mesmo.", ephemeral=True)
+            return
+
+        if valor <= 0:
+            await interaction.response.send_message("❌ O valor deve ser maior que zero.", ephemeral=True)
+            return
+
+        sender_uid = self.ensure_user(interaction.user.id)
+        db = self.bot.db()
+        balance = db.get(sender_uid, {}).get("soul", 0)
+
+        if balance < valor:
+            await interaction.response.send_message("❌ Saldo insuficiente.", ephemeral=True)
+            return
+
+        # Criar view de confirmação para o destinatário
+        class TransferConfirmView(discord.ui.View):
+            def __init__(self, bot, sender_id: int, recipient_id: int, amount: int, timeout: int = 120):
+                super().__init__(timeout=timeout)
+                self.bot = bot
+                self.sender_id = sender_id
+                self.recipient_id = recipient_id
+                self.amount = amount
+                self.confirmed = False
+
+            def disable_all_items(self):
+                """Compat shim: desabilita todos os itens do view."""
+                for item in list(self.children):
+                    try:
+                        item.disabled = True
+                    except Exception:
+                        pass
+
+            @discord.ui.button(label="Confirmar Transferência", style=discord.ButtonStyle.success)
+            async def confirm(self, interaction_button: discord.Interaction, button: discord.ui.Button):
+                if interaction_button.user.id != self.recipient_id:
+                    await interaction_button.response.send_message("Somente o destinatário pode confirmar esta transferência.", ephemeral=True)
+                    return
+
+                # Recarregar DB e checar saldo do remetente novamente
+                db_local = self.bot.db()
+                sender_uid_local = str(self.sender_id)
+                recipient_uid_local = str(self.recipient_id)
+
+                if sender_uid_local not in db_local:
+                    await interaction_button.response.send_message("❌ Dados do remetente não encontrados.", ephemeral=True)
+                    self.disable_all_items()
+                    try:
+                        await interaction_button.message.edit(view=self)
+                    except:
+                        pass
+                    return
+
+                if db_local[sender_uid_local].get("soul", 0) < self.amount:
+                    await interaction_button.response.send_message("❌ Transferência falhou: remetente não tem saldo suficiente.", ephemeral=True)
+                    self.disable_all_items()
+                    try:
+                        await interaction_button.message.edit(view=self)
+                    except:
+                        pass
+                    return
+
+                # Garantir que o destinatário possui entrada no DB
+                if recipient_uid_local not in db_local:
+                    db_local[recipient_uid_local] = {
+                        "sobre": None,
+                        "tempo_total": 0,
+                        "soul": 0,
+                        "xp": 0,
+                        "level": 1,
+                        "last_daily": None,
+                        "last_mine": None,
+                        "mine_streak": 0,
+                        "daily_streak": 0,
+                        "last_caca": None,
+                        "caca_streak": 0,
+                        "caca_longa_ativa": None,
+                        "missoes": [],
+                        "missoes_completas": []
+                    }
+
+                # Efetuar transferência
+                db_local[sender_uid_local]["soul"] = db_local[sender_uid_local].get("soul", 0) - self.amount
+                db_local[recipient_uid_local]["soul"] = db_local[recipient_uid_local].get("soul", 0) + self.amount
+                self.bot.save_db(db_local)
+
+                self.confirmed = True
+                self.disable_all_items()
+                try:
+                    await interaction_button.response.send_message(f"✅ Transferência de **{self.amount:,}** almas confirmada por {interaction_button.user.mention}.")
+                except:
+                    pass
+                try:
+                    await interaction_button.message.edit(view=self)
+                except:
+                    pass
+
+        view = TransferConfirmView(self.bot, interaction.user.id, membro.id, valor)
+
+        embed = discord.Embed(
+            title="🔁 Pedido de Transferência",
+            description=f"{interaction.user.mention} quer enviar **{valor:,}** almas para {membro.mention}.",
+            color=discord.Color.blurple()
+        )
+        embed.set_footer(text="Clique em 'Confirmar Transferência' para aceitar. (2 minutos)")
+
+        await interaction.response.send_message(embed=embed, view=view)
+
+        # Aguardar confirmação; se não confirmado em tempo, desabilitar botões e notificar remetente
+        await view.wait()
+
+        if not view.confirmed:
+            try:
+                view.disable_all_items()
+                await interaction.edit_original_response(view=view)
+            except:
+                pass
+            try:
+                await interaction.followup.send("❌ A transferência não foi confirmada a tempo.", ephemeral=True)
+            except:
+                pass
+
     @app_commands.command(name="mine", description="Mine e ganhe almas! (Cooldown: 60s)")
     async def mine(self, interaction: discord.Interaction):
         uid = self.ensure_user(interaction.user.id)
-        db = load_economia_db()
+        db = self.bot.db()
         
         last_mine = db[uid].get("last_mine")
         now = datetime.datetime.now()
@@ -256,14 +471,14 @@ class Economia(commands.Cog):
         leveled_up, new_level = self.add_xp(interaction.user.id, bonus_xp)
         
         # Recarregar DB e atualizar last_mine e streak
-        db = load_economia_db()
+        db = self.bot.db()
         db[uid]["last_mine"] = now.isoformat()
         db[uid]["mine_streak"] = streak
         
         # Atualizar progresso de missões
         self.update_missao_progresso(db, uid, "mine", 1)
         
-        save_economia_db(db)
+        self.bot.save_db(db)
         
         # Emojis aleatórios para a mineração
         mine_emojis = ["⛏️", "🔨", "<:alma:1443647166399909998>", "⚒️", "🪨"]
@@ -297,11 +512,12 @@ class Economia(commands.Cog):
     async def balance(self, interaction: discord.Interaction, membro: discord.Member = None):
         membro = membro or interaction.user
         uid = self.ensure_user(membro.id)
-        db = load_economia_db()
+        db = self.bot.db()
         
         souls = db[uid].get("soul", 0)
         xp = db[uid].get("xp", 0)
         level = db[uid].get("level", 1)
+        trabalho_atual = db[uid].get("trabalho_atual")
         
         xp_for_next = get_xp_for_next_level(level)
         xp_for_current = get_xp_for_level(level)
@@ -312,7 +528,7 @@ class Economia(commands.Cog):
             title=f"💰 Carteira de {membro.display_name}",
             color=discord.Color.green()
         )
-        embed.add_field(name="<:alma:1443647166399909998> Almas", value=f"**{souls:,}** 🔮", inline=True)
+        embed.add_field(name="<:alma:1443647166399909998> Almas", value=f"**{souls:,}** <:alma:1443647166399909998>", inline=True)
         embed.add_field(name="⭐ Nível", value=f"**{level}**", inline=True)
         embed.add_field(name="📊 XP", value=f"**{xp:,}** XP", inline=True)
         embed.add_field(
@@ -321,131 +537,22 @@ class Economia(commands.Cog):
             inline=False
         )
         
-        # Barra de progresso visual
-        bar_length = 20
-        filled = int((current_xp_progress / xp_for_next) * bar_length)
-        bar = "█" * filled + "░" * (bar_length - filled)
-        embed.add_field(name="Progresso", value=f"`{bar}`", inline=False)
+        # Mostrar emprego ao invés da barra de progresso
+        if trabalho_atual and trabalho_atual in self.trabalhos:
+            trabalho_info = self.trabalhos[trabalho_atual]
+            emprego_texto = trabalho_info["nome"]
+        else:
+            emprego_texto = "❌ Desempregado"
+        
+        embed.add_field(name="Emprego", value=emprego_texto, inline=False)
         
         embed.set_thumbnail(url=membro.display_avatar.url)
         embed.set_footer(text="Aeternum Exilium • Sistema de Economia")
         await interaction.response.send_message(embed=embed)
 
-    @app_commands.command(name="pay", description="Pague outro membro. Requer confirmação do destinatário.")
-    @app_commands.describe(membro="Membro destinatário", valor="Quantidade de almas a enviar")
-    async def pay(self, interaction: discord.Interaction, membro: discord.Member, valor: int):
-        # Validações iniciais
-        if membro.bot:
-            await interaction.response.send_message("❌ Você não pode enviar almas para bots.", ephemeral=True)
-            return
-
-        if membro.id == interaction.user.id:
-            await interaction.response.send_message("❌ Você não pode enviar almas para si mesmo.", ephemeral=True)
-            return
-
-        if valor <= 0:
-            await interaction.response.send_message("❌ O valor deve ser maior que zero.", ephemeral=True)
-            return
-
-        uid = self.ensure_user(interaction.user.id)
-        db = load_economia_db()
-        balance = db.get(uid, {}).get("soul", 0)
-
-        if balance < valor:
-            await interaction.response.send_message("❌ Saldo insuficiente.", ephemeral=True)
-            return
-
-        # Criar view de confirmação para o destinatário
-        class TransferConfirmView(discord.ui.View):
-            def __init__(self, bot, sender_id: int, recipient_id: int, amount: int, timeout: int = 120):
-                super().__init__(timeout=timeout)
-                self.bot = bot
-                self.sender_id = sender_id
-                self.recipient_id = recipient_id
-                self.amount = amount
-                self.confirmed = False
-
-            @discord.ui.button(label="Confirmar Transferência", style=discord.ButtonStyle.success)
-            async def confirm(self, interaction_button: discord.Interaction, button: discord.ui.Button):
-                if interaction_button.user.id != self.recipient_id:
-                    await interaction_button.response.send_message("Somente o destinatário pode confirmar esta transferência.", ephemeral=True)
-                    return
-
-                # Recarregar DB e checar saldo do remetente novamente
-                db_local = load_economia_db()
-                sender_uid = str(self.sender_id)
-                recipient_uid = str(self.recipient_id)
-
-                if sender_uid not in db_local:
-                    await interaction_button.response.send_message("❌ Dados do remetente não encontrados.", ephemeral=True)
-                    self.disable_all_items()
-                    await interaction_button.message.edit(view=self)
-                    return
-
-                if db_local[sender_uid].get("soul", 0) < self.amount:
-                    await interaction_button.response.send_message("❌ Transferência falhou: remetente não tem saldo suficiente.", ephemeral=True)
-                    self.disable_all_items()
-                    await interaction_button.message.edit(view=self)
-                    return
-
-                # Garantir que o destinatário possui entrada no DB
-                if recipient_uid not in db_local:
-                    db_local[recipient_uid] = {
-                        "soul": 0,
-                        "xp": 0,
-                        "level": 1,
-                        "last_daily": None,
-                        "last_mine": None,
-                        "mine_streak": 0,
-                        "daily_streak": 0,
-                        "last_caca": None,
-                        "caca_streak": 0,
-                        "caca_longa_ativa": None,
-                        "missoes": [],
-                        "missoes_completas": []
-                    }
-
-                # Efetuar transferência
-                db_local[sender_uid]["soul"] = db_local[sender_uid].get("soul", 0) - self.amount
-                db_local[recipient_uid]["soul"] = db_local[recipient_uid].get("soul", 0) + self.amount
-                save_economia_db(db_local)
-
-                self.confirmed = True
-                self.disable_all_items()
-                try:
-                    await interaction_button.response.send_message(f"✅ Transferência de **{self.amount:,}** almas confirmada por {interaction_button.user.mention}.")
-                except:
-                    pass
-                await interaction_button.message.edit(view=self)
-
-        view = TransferConfirmView(self.bot, interaction.user.id, membro.id, valor)
-
-        embed = discord.Embed(
-            title="🔁 Pedido de Transferência",
-            description=f"{interaction.user.mention} quer enviar **{valor:,}** almas para {membro.mention}.",
-            color=discord.Color.blurple()
-        )
-        embed.set_footer(text="Clique em 'Confirmar Transferência' para aceitar. (2 minutos)")
-
-        await interaction.response.send_message(embed=embed, view=view)
-
-        # Aguardar confirmação; se não confirmado em tempo, desabilitar botões e notificar remetente
-        await view.wait()
-
-        if not view.confirmed:
-            try:
-                view.disable_all_items()
-                await interaction.edit_original_response(view=view)
-            except:
-                pass
-            try:
-                await interaction.followup.send("❌ A transferência não foi confirmada a tempo.", ephemeral=True)
-            except:
-                pass
-
     @app_commands.command(name="top-souls", description="Ranking dos mais ricos em almas")
     async def top_souls(self, interaction: discord.Interaction):
-        db = load_economia_db()
+        db = self.bot.db()
         
         ranking_items = []
         for uid, data in db.items():
@@ -493,7 +600,7 @@ class Economia(commands.Cog):
 
     @app_commands.command(name="top-level", description="Ranking dos maiores níveis")
     async def top_level(self, interaction: discord.Interaction):
-        db = load_economia_db()
+        db = self.bot.db()
         
         ranking_items = []
         for uid, data in db.items():
@@ -544,7 +651,7 @@ class Economia(commands.Cog):
     @app_commands.command(name="missoes", description="Veja suas missões disponíveis")
     async def missoes(self, interaction: discord.Interaction):
         uid = self.ensure_user(interaction.user.id)
-        db = load_economia_db()
+        db = self.bot.db()
         
         # Tipos de missões disponíveis
         tipos_missoes = {
@@ -592,7 +699,7 @@ class Economia(commands.Cog):
                 missao["progresso"] = 0
                 missoes_ativas.append(missao)
             db[uid]["missoes"] = missoes_ativas
-            save_economia_db(db)
+            self.bot.save_db(db)
         
         embed = discord.Embed(
             title="📋 Suas Missões",
@@ -634,7 +741,7 @@ class Economia(commands.Cog):
             return
         
         uid = self.ensure_user(interaction.user.id)
-        db = load_economia_db()
+        db = self.bot.db()
         
         missoes_ativas = db[uid].get("missoes", [])
         
@@ -669,7 +776,7 @@ class Economia(commands.Cog):
         missoes_completas.append(missao.get("tipo", "unknown"))
         db[uid]["missoes"] = missoes_ativas
         db[uid]["missoes_completas"] = missoes_completas
-        save_economia_db(db)
+        self.bot.save_db(db)
         
         embed = discord.Embed(
             title="🎉 Missão Reivindicada!",
@@ -691,7 +798,7 @@ class Economia(commands.Cog):
     @app_commands.command(name="caça", description="Caçe almas na floresta escura! (Cooldown: 2min)")
     async def caca(self, interaction: discord.Interaction):
         uid = self.ensure_user(interaction.user.id)
-        db = load_economia_db()
+        db = self.bot.db()
         
         last_caca = db[uid].get("last_caca")
         now = datetime.datetime.now()
@@ -765,10 +872,10 @@ class Economia(commands.Cog):
         leveled_up, new_level = self.add_xp(interaction.user.id, bonus_xp)
         
         # Recarregar DB e atualizar last_caca e streak
-        db = load_economia_db()
+        db = self.bot.db()
         db[uid]["last_caca"] = now.isoformat()
         db[uid]["caca_streak"] = streak
-        save_economia_db(db)
+        self.bot.save_db(db)
         
         # Embed de resultado
         embed_resultado = discord.Embed(
@@ -799,7 +906,7 @@ class Economia(commands.Cog):
     @app_commands.command(name="caça-longa", description="Inicie uma caçada longa de 12 horas por almas valiosas!")
     async def caca_longa(self, interaction: discord.Interaction):
         uid = self.ensure_user(interaction.user.id)
-        db = load_economia_db()
+        db = self.bot.db()
         
         # Verificar se já está em uma caça longa
         caca_longa = db[uid].get("caca_longa_ativa")
@@ -837,7 +944,7 @@ class Economia(commands.Cog):
             "fim": fim_caca.isoformat(),
             "channel_id": interaction.channel_id
         }
-        save_economia_db(db)
+        self.bot.save_db(db)
         
         embed = discord.Embed(
             title="🌲 Caça Longa Iniciada!",
@@ -858,7 +965,7 @@ class Economia(commands.Cog):
     async def processar_caca_longa(self, user_id: int, channel_id: int = None):
         """Processa uma caça longa concluída"""
         uid = self.ensure_user(user_id)
-        db = load_economia_db()
+        db = self.bot.db()
         
         caca_longa = db[uid].get("caca_longa_ativa")
         if not caca_longa:
@@ -891,9 +998,9 @@ class Economia(commands.Cog):
         leveled_up, new_level = self.add_xp(user_id, bonus_xp)
         
         # Recarregar DB e remover caça longa ativa
-        db = load_economia_db()
+        db = self.bot.db()
         del db[uid]["caca_longa_ativa"]
-        save_economia_db(db)
+        self.bot.save_db(db)
         
         # Criar embed de resultado
         embed = discord.Embed(
@@ -940,7 +1047,7 @@ class Economia(commands.Cog):
         if not self.bot.is_ready():
             return
         
-        db = load_economia_db()
+        db = self.bot.db()
         agora = datetime.datetime.now()
         
         for uid, data in db.items():
@@ -964,6 +1071,204 @@ class Economia(commands.Cog):
 
     def cog_unload(self):
         self.check_cacas_longas.cancel()
+
+    @app_commands.command(name="escolher-trabalho", description="Escolha sua profissão para ganhar almas e XP!")
+    async def escolher_trabalho(self, interaction: discord.Interaction):
+        uid = self.ensure_user(interaction.user.id)
+        db = self.bot.db()
+        
+        trabalho_atual = db[uid].get("trabalho_atual")
+        
+        embed = discord.Embed(
+            title="💼 Escolha sua Profissão",
+            description="Selecione uma profissão para começar a trabalhar e ganhar recompensas!\n\n"
+                       "**Profissões disponíveis:**\n",
+            color=discord.Color.blue()
+        )
+        
+        # Listar todos os trabalhos
+        for key, trabalho in self.trabalhos.items():
+            embed.add_field(
+                name=trabalho["nome"],
+                value=f"{trabalho['descricao']}\n"
+                      f"💰 **{trabalho['souls_min']}-{trabalho['souls_max']}** almas\n"
+                      f"⭐ **{trabalho['xp_min']}-{trabalho['xp_max']}** XP",
+                inline=True
+            )
+        
+        if trabalho_atual:
+            trabalho_info = self.trabalhos.get(trabalho_atual, {})
+            embed.add_field(
+                name="📋 Profissão Atual",
+                value=f"{trabalho_info.get('nome', trabalho_atual)}",
+                inline=False
+            )
+        
+        embed.set_footer(text="Use o menu abaixo para selecionar sua profissão!")
+        
+        # Criar select menu
+        class TrabalhoSelect(discord.ui.Select):
+            def __init__(self, cog_self):
+                self.cog_self = cog_self
+                options = [
+                    discord.SelectOption(
+                        label=trabalho["nome"],
+                        value=key,
+                        description=f"{trabalho['souls_min']}-{trabalho['souls_max']} souls • {trabalho['xp_min']}-{trabalho['xp_max']} XP",
+                        emoji=trabalho["nome"].split()[0]
+                    )
+                    for key, trabalho in self.cog_self.trabalhos.items()
+                ]
+                super().__init__(
+                    placeholder="Selecione sua profissão...",
+                    options=options,
+                    min_values=1,
+                    max_values=1
+                )
+            
+            async def callback(self, interaction: discord.Interaction):
+                trabalho_escolhido = self.values[0]
+                uid = self.cog_self.ensure_user(interaction.user.id)
+                db = self.cog_self.bot.db()
+                
+                db[uid]["trabalho_atual"] = trabalho_escolhido
+                self.cog_self.bot.save_db(db)
+                
+                trabalho_info = self.cog_self.trabalhos[trabalho_escolhido]
+                
+                embed = discord.Embed(
+                    title="✅ Profissão Escolhida!",
+                    description=f"**{interaction.user.mention}** agora trabalha como **{trabalho_info['nome']}**!",
+                    color=discord.Color.green()
+                )
+                embed.add_field(
+                    name="💼 Sua Profissão",
+                    value=f"{trabalho_info['nome']}\n{trabalho_info['descricao']}",
+                    inline=False
+                )
+                embed.add_field(
+                    name="💰 Recompensas",
+                    value=f"**{trabalho_info['souls_min']}-{trabalho_info['souls_max']}** almas\n"
+                          f"**{trabalho_info['xp_min']}-{trabalho_info['xp_max']}** XP",
+                    inline=False
+                )
+                embed.add_field(
+                    name="⏰ Próximos passos",
+                    value="Use `/trabalhar` para começar a trabalhar e ganhar recompensas!",
+                    inline=False
+                )
+                embed.set_thumbnail(url=interaction.user.display_avatar.url)
+                embed.set_footer(text="Aeternum Exilium • Sistema de Trabalho")
+                
+                await interaction.response.edit_message(embed=embed, view=None)
+        
+        class TrabalhoView(discord.ui.View):
+            def __init__(self, cog_self):
+                super().__init__(timeout=60)
+                self.add_item(TrabalhoSelect(cog_self))
+        
+        await interaction.response.send_message(embed=embed, view=TrabalhoView(self))
+
+    @app_commands.command(name="trabalhar", description="Trabalhe e ganhe almas e XP!")
+    async def trabalhar(self, interaction: discord.Interaction):
+        uid = self.ensure_user(interaction.user.id)
+        db = self.bot.db()
+        
+        trabalho_atual = db[uid].get("trabalho_atual")
+        
+        # Verificar se o usuário escolheu uma profissão
+        if not trabalho_atual or trabalho_atual not in self.trabalhos:
+            embed = discord.Embed(
+                title="❌ Sem Profissão",
+                description="Você ainda não escolheu uma profissão!\n"
+                          "Use `/escolher-trabalho` para selecionar sua profissão primeiro.",
+                color=discord.Color.red()
+            )
+            await interaction.response.send_message(embed=embed, ephemeral=True)
+            return
+        
+        # Verificar cooldown
+        last_trabalho = db[uid].get("last_trabalho")
+        now = datetime.datetime.now()
+        
+        if last_trabalho:
+            last_trabalho_dt = datetime.datetime.fromisoformat(last_trabalho)
+            time_diff = (now - last_trabalho_dt).total_seconds()
+            
+            if time_diff < self.trabalho_cooldown:
+                remaining = self.trabalho_cooldown - time_diff
+                hours = int(remaining // 3600)
+                minutes = int((remaining % 3600) // 60)
+                seconds = int(remaining % 60)
+                
+                embed = discord.Embed(
+                    title="⏰ Descansando",
+                    description=f"Você está cansado de trabalhar!\n"
+                              f"Poderá trabalhar novamente em: **{hours}h {minutes}m {seconds}s**",
+                    color=discord.Color.orange()
+                )
+                await interaction.response.send_message(embed=embed, ephemeral=True)
+                return
+        
+        # Processar trabalho
+        trabalho_info = self.trabalhos[trabalho_atual]
+        souls_ganhos = random.randint(trabalho_info["souls_min"], trabalho_info["souls_max"])
+        xp_ganho = random.randint(trabalho_info["xp_min"], trabalho_info["xp_max"])
+        
+        # Adicionar recompensas
+        self.add_soul(interaction.user.id, souls_ganhos)
+        leveled_up, new_level = self.add_xp(interaction.user.id, xp_ganho)
+        
+        # Atualizar last_trabalho
+        db = self.bot.db()
+        db[uid]["last_trabalho"] = now.isoformat()
+        
+        # Atualizar progresso de missões
+        self.update_missao_progresso(db, uid, "trabalhar", 1)
+        
+        self.bot.save_db(db)
+        
+        # Mensagens aleatórias de trabalho
+        mensagens_trabalho = [
+            "trabalhou duro e foi bem recompensado!",
+            "completou suas tarefas com excelência!",
+            "teve um dia produtivo de trabalho!",
+            "se destacou no trabalho hoje!",
+            "deu o seu melhor e foi reconhecido!"
+        ]
+        
+        embed = discord.Embed(
+            title=f"{trabalho_info['nome']} em Ação!",
+            description=f"**{interaction.user.mention}** {random.choice(mensagens_trabalho)}",
+            color=discord.Color.gold()
+        )
+        embed.add_field(
+            name="💰 Almas ganhas",
+            value=f"**{souls_ganhos}** <:alma:1443647166399909998>",
+            inline=True
+        )
+        embed.add_field(
+            name="⭐ XP ganho",
+            value=f"**{xp_ganho}** XP",
+            inline=True
+        )
+        embed.add_field(
+            name="⏰ Próximo trabalho",
+            value="Disponível em **1 hora**",
+            inline=True
+        )
+        
+        if leveled_up:
+            embed.add_field(
+                name="🎉 Level Up!",
+                value=f"Você subiu para o nível **{new_level}**!",
+                inline=False
+            )
+        
+        embed.set_thumbnail(url=interaction.user.display_avatar.url)
+        embed.set_footer(text="Aeternum Exilium • Sistema de Trabalho")
+        
+        await interaction.response.send_message(embed=embed)
 
 
 async def setup(bot):

@@ -23,9 +23,9 @@ from cryptography.fernet import Fernet
 # ----------------------------
 # CONFIGURAÇÃO
 # ----------------------------
-APP_SECRET = os.environ.get("AMANTES_SECRET") or "troque-esta-chave-por-uma-segura"
-DB_PATH = os.environ.get("AMANTES_DB") or "amantes.db"
-KEY_PATH = os.environ.get("AMANTES_KEY") or "amantes.key"  # chave para cifrar notas sensíveis
+APP_SECRET = "troque-esta-chave-por-uma-segura"
+DB_PATH = "amantes.db"
+KEY_PATH = "amantes.key"  # chave para cifrar notas sensíveis
 
 # Geração / carregamento da chave de cifragem
 if not os.path.exists(KEY_PATH):

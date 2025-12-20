@@ -5,8 +5,30 @@ from pathlib import Path
 from discord.ext import commands
 from discord import app_commands
 
-# Importar funções de banco de dados do db.py centralizado
-from db import load_perfil_db, save_perfil_db
+# ==============================
+# Funções de Banco de Dados
+# ==============================
+BASE_DIR = Path(__file__).parent.parent
+DATA_DIR = BASE_DIR / "data"
+PERFIL_DB_PATH = DATA_DIR / "perfil.json"
+
+def ensure_perfil_db_file() -> None:
+    DATA_DIR.mkdir(parents=True, exist_ok=True)
+    if not PERFIL_DB_PATH.exists():
+        PERFIL_DB_PATH.write_text("{}", encoding="utf-8")
+
+def load_perfil_db() -> dict:
+    ensure_perfil_db_file()
+    try:
+        with PERFIL_DB_PATH.open("r", encoding="utf-8") as fp:
+            return json.load(fp)
+    except json.JSONDecodeError:
+        return {}
+
+def save_perfil_db(data: dict) -> None:
+    ensure_perfil_db_file()
+    with PERFIL_DB_PATH.open("w", encoding="utf-8") as fp:
+        json.dump(data, fp, ensure_ascii=False, indent=2)
 
 
 class SetSobre(commands.Cog):
