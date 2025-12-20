@@ -2,9 +2,56 @@ import discord
 import random
 import datetime
 import asyncio
+import json
+from pathlib import Path
 from discord import app_commands
 from discord.ext import commands, tasks
 
+
+# ==================== BALANCEAMENTO ====================
+# Ajuste esses valores para balancear a economia
+class BalanceConfig:
+    """Configuração de balanceamento da economia"""
+    
+    # Moedas (Almas)
+    DAILY_MIN = 50
+    DAILY_MAX = 150
+    MINE_MIN = 10
+    MINE_MAX = 50
+    CACA_MIN = 15
+    CACA_MAX = 60
+    CACA_LONGA_MIN = 200
+    CACA_LONGA_MAX = 500
+    
+    # Raridades (multiplicadores para items)
+    RARIDADE_COMUM = 1.0
+    RARIDADE_RARO = 2.5
+    RARIDADE_EPICO = 5.0
+    RARIDADE_LENDARIO = 10.0
+    RARIDADE_ANCESTRAL = 20.0
+    
+    # Forja (taxa de falha)
+    FORJA_TOTEM_FALHA = 0.12  # 12%
+    FORJA_LAMINA_FALHA = 0.15  # 15%
+    FORJA_PUNHAL_FALHA = 0.18  # 18%
+    FORJA_ORBE_FALHA = 0.20    # 20%
+    FORJA_CORACAO_FALHA = 0.22 # 22%
+    FORJA_MARTELO_FALHA = 0.25 # 25%
+    
+    # Venda de items
+    VENDA_PENALIDADE = 0.30  # Perde 30%, recebe 70%
+    
+    # Mercado
+    MERCADO_TAX = 0.05  # Taxa de 5% em transações
+    
+    # Cooldowns (em segundos)
+    MINE_COOLDOWN = 300  # 5 minutos
+    CACA_COOLDOWN = 120  # 2 minutos
+    DAILY_COOLDOWN = 86400  # 24 horas
+    TRABALHO_COOLDOWN = 3600  # 1 hora
+    CACA_LONGA_DURATION = 43200  # 12 horas
+
+# =====================================================
 
 def calculate_level(xp: int) -> int:
     """Calcula o nível baseado na XP"""
@@ -45,11 +92,12 @@ def get_xp_for_next_level(level: int) -> int:
 class Economia(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
-        self.mine_cooldown = 300  # 5 minutos (300 segundos) entre minerações
-        self.daily_cooldown = 86400  # 24 horas
-        self.caca_cooldown = 120  # 2 minutos entre caças rápidas
-        self.caca_longa_duration = 43200  # 12 horas em segundos
-        self.trabalho_cooldown = 3600  # 1 hora (3600 segundos) entre trabalhos
+        # Usar valores do BalanceConfig
+        self.mine_cooldown = BalanceConfig.MINE_COOLDOWN
+        self.daily_cooldown = BalanceConfig.DAILY_COOLDOWN
+        self.caca_cooldown = BalanceConfig.CACA_COOLDOWN
+        self.caca_longa_duration = BalanceConfig.CACA_LONGA_DURATION
+        self.trabalho_cooldown = BalanceConfig.TRABALHO_COOLDOWN
         
         # Definição dos trabalhos disponíveis
         self.trabalhos = {

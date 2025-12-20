@@ -12,6 +12,11 @@ Bot Discord completo para **Aeternum Exilium** com sistema de economia, níveis,
 - 🎧 **Tracking de Call** - Acompanhe tempo em chamadas de voz
 - ⛏️ **Mineração** - Mine recursos e ganhe almas
 - 🌲 **Sistema de Caça** - Caça rápida e caça longa por almas
+- 🏪 **Loja Completa** - Compre items consumíveis, lootboxes e especiais
+- ⚒️ **Sistema de Forja** - Crie armas lendárias com risco de falha
+- 🔨 **Crafting** - Combine materiais para criar novos items
+- 📦 **Inventário** - Gerencie seus items e equipáveis
+- 🏪 **Mercado** - Compre e venda items entre players
 
 ---
 
@@ -48,6 +53,60 @@ python main.py
 | `/caça-longa`       | Caça longa de 12h (200-500 almas)     | 12h      |
 | `/balance [membro]` | Ver saldo de almas e XP               | -        |
 | `/top-souls`        | Ranking de almas                      | -        |
+
+### 🏪 Loja & Inventário
+
+| Comando      | Descrição                                  | Tipo   |
+| ------------ | ------------------------------------------ | ------ |
+| `/loja`      | Abra a loja (consumíveis, caixas, extras)  | Buyer  |
+| `/comprar`   | Compre items com almas                     | Buyer  |
+| `/vender`    | Venda items (recebe 70% do valor)          | Seller |
+| `/inventario`| Veja seus items e almas                    | View   |
+
+### ⚒️ Crafting & Forja
+
+| Comando | Descrição                                  | Tipo      |
+| ------- | ------------------------------------------ | --------- |
+| `/craft`| Crafta items usando materiais              | Crafting  |
+| `/forjar` | Forja armas lendárias (com risco 12-25%) | Crafting  |
+| `/ranking` | Top 10 jogadores mais ricos            | Leaderboard |
+
+---
+
+## 🛒 Sistema de Loja
+
+### Itens Disponíveis (34 total)
+
+**Craft** (9 itens)
+- Lingote Etéreo, Núcleo Purificado, Runas Reforçadas, Cristal Lapidado, Amuleto Incompleto, Pergaminho Rasgado, Essência Concentrada, Selo Místico, Fragmento Encantado
+
+**Forja** (6 armas)
+- Lâmina do Exílio, Punhal das Almas, Martelo do Vazio, Orbe da Eternidade, Totem Espiritual, Coração Arcano
+
+**Passivos** (4 equipáveis)
+- Amuleto da Sorte (+15% drops), Anel da Ganância (2x almas), Talismã do Silêncio (-20% dano), Colar da Persistência (+25% regen)
+
+**Consumíveis** (6 itens)
+- Poção de Alma, Elixir da Fortuna (+50% almas/1h), Incenso Espiritual (+30% drops), Fragmento da Sorte, Pergaminho de Bênção, Essência Restauradora
+
+**Lootboxes** (4 caixas)
+- Caixa Comum, Caixa Rara, Caixa Ancestral, Caixa do Vazio
+
+**Especiais** (5 itens raros)
+- Alma Corrompida, Fragmento do Exilium, Relíquia Perdida, Selo do Criador, Essência Primordial
+
+### Raridades & Multiplicadores
+- ⚪ Comum: 1.0x
+- 🔵 Raro: 2.5x
+- 🟣 Épico: 5.0x
+- 🟡 Lendário: 10.0x
+- 🔴 Ancestral: 20.0x
+
+### Economia Balanceada
+- ✅ Taxa de falha na forja (12-25%) - Remove almas
+- ✅ Venda com penalidade (70% retorno) - Previne flip
+- ✅ Custo duplo (almas + materiais) - Risco real
+- ✅ Sem farm infinito - Progresso controlado
 | `/top-level`        | Ranking de níveis                     | -        |
 
 | `/pay @membro valor` | Enviar almas para outro membro (requer confirmação do destinatário) | - |

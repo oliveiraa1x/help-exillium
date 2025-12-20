@@ -1,2 +1,377 @@
-{}
+{
+  "raridades": {
+    "comum": {
+      "valor_multiplicador": 1.0,
+      "cor": "4A4A4A"
+    },
+    "raro": {
+      "valor_multiplicador": 2.5,
+      "cor": "0099FF"
+    },
+    "epico": {
+      "valor_multiplicador": 5.0,
+      "cor": "9933FF"
+    },
+    "lendario": {
+      "valor_multiplicador": 10.0,
+      "cor": "FFD700"
+    },
+    "ancestral": {
+      "valor_multiplicador": 20.0,
+      "cor": "FF4500"
+    }
+  },
+  "itens_craft": {
+    "lingote_etereo": {
+      "nome": "Lingote Etéreo",
+      "raridade": "raro",
+      "valor_base": 150,
+      "descricao": "Material comum para crafting",
+      "emoji": "🔱"
+    },
+    "nucleo_purificado": {
+      "nome": "Núcleo Purificado",
+      "raridade": "raro",
+      "valor_base": 200,
+      "descricao": "Essencial para itens mágicos",
+      "emoji": "⚛️"
+    },
+    "runas_reforcadas": {
+      "nome": "Runas Reforçadas",
+      "raridade": "raro",
+      "valor_base": 180,
+      "descricao": "Aumenta poder mágico",
+      "emoji": "⚡"
+    },
+    "cristal_lapidado": {
+      "nome": "Cristal Lapidado",
+      "raridade": "epico",
+      "valor_base": 350,
+      "descricao": "Material raro de altíssima qualidade",
+      "emoji": "💎"
+    },
+    "amuleto_incompleto": {
+      "nome": "Amuleto Incompleto",
+      "raridade": "raro",
+      "valor_base": 220,
+      "descricao": "Precisa de aperfeiçoamento",
+      "emoji": "📿"
+    },
+    "pergaminho_rasgado": {
+      "nome": "Pergaminho Rasgado",
+      "raridade": "comum",
+      "valor_base": 80,
+      "descricao": "Antigo conhecimento fragmentado",
+      "emoji": "📜"
+    },
+    "essencia_concentrada": {
+      "nome": "Essência Concentrada",
+      "raridade": "epico",
+      "valor_base": 400,
+      "descricao": "Pura energia mágica",
+      "emoji": "💜"
+    },
+    "selo_mistico": {
+      "nome": "Selo Místico",
+      "raridade": "epico",
+      "valor_base": 380,
+      "descricao": "Sela magia permanentemente",
+      "emoji": "🔮"
+    },
+    "fragmento_encantado": {
+      "nome": "Fragmento Encantado",
+      "raridade": "raro",
+      "valor_base": 210,
+      "descricao": "Resquício de encantamento antigo",
+      "emoji": "✨"
+    }
+  },
+  "itens_forja": {
+    "lamina_exilio": {
+      "nome": "Lâmina do Exílio",
+      "raridade": "lendario",
+      "valor_base": 2000,
+      "descricao": "Arma lendária que corta dimensões",
+      "emoji": "⚔️",
+      "taxa_falha": 0.15,
+      "ingredientes": {
+        "lingote_etereo": 5,
+        "essencia_concentrada": 3,
+        "cristal_lapidado": 2
+      },
+      "custo_almas": 5000
+    },
+    "punhal_almas": {
+      "nome": "Punhal das Almas",
+      "raridade": "lendario",
+      "valor_base": 1800,
+      "descricao": "Bebe a essência de seus inimigos",
+      "emoji": "🗡️",
+      "taxa_falha": 0.18,
+      "ingredientes": {
+        "nucleo_purificado": 4,
+        "runas_reforcadas": 3,
+        "fragmento_encantado": 4
+      },
+      "custo_almas": 4500
+    },
+    "martelo_vazio": {
+      "nome": "Martelo do Vazio",
+      "raridade": "ancestral",
+      "valor_base": 3500,
+      "descricao": "Ferramenta de poder incomparável",
+      "emoji": "🔨",
+      "taxa_falha": 0.25,
+      "ingredientes": {
+        "cristal_lapidado": 5,
+        "essencia_concentrada": 5,
+        "selo_mistico": 3
+      },
+      "custo_almas": 8000
+    },
+    "orbe_eternidade": {
+      "nome": "Orbe da Eternidade",
+      "raridade": "ancestral",
+      "valor_base": 3200,
+      "descricao": "Acumula poder ao longo do tempo",
+      "emoji": "🌐",
+      "taxa_falha": 0.20,
+      "ingredientes": {
+        "nucleo_purificado": 6,
+        "amuleto_incompleto": 2,
+        "essencia_concentrada": 4
+      },
+      "custo_almas": 7500
+    },
+    "totem_espiritual": {
+      "nome": "Totem Espiritual",
+      "raridade": "lendario",
+      "valor_base": 2200,
+      "descricao": "Canaliza energia espiritual",
+      "emoji": "🏔️",
+      "taxa_falha": 0.12,
+      "ingredientes": {
+        "runas_reforcadas": 5,
+        "selo_mistico": 2,
+        "fragmento_encantado": 3
+      },
+      "custo_almas": 5500
+    },
+    "coracao_arcano": {
+      "nome": "Coração Arcano",
+      "raridade": "ancestral",
+      "valor_base": 3000,
+      "descricao": "Núcleo de magia pura",
+      "emoji": "❤️‍🔥",
+      "taxa_falha": 0.22,
+      "ingredientes": {
+        "essencia_concentrada": 6,
+        "cristal_lapidado": 3,
+        "selo_mistico": 2
+      },
+      "custo_almas": 7000
+    }
+  },
+  "itens_passivos": {
+    "amuleto_sorte": {
+      "nome": "Amuleto da Sorte",
+      "raridade": "epico",
+      "valor_base": 500,
+      "descricao": "Aumenta chance de drops raros",
+      "emoji": "🍀",
+      "bonus": {
+        "chance_drop_raro": 0.15
+      }
+    },
+    "anel_ganancia": {
+      "nome": "Anel da Ganância",
+      "raridade": "lendario",
+      "valor_base": 1500,
+      "descricao": "Duplica almas ganhas",
+      "emoji": "💰",
+      "bonus": {
+        "multiplicador_almas": 2.0
+      }
+    },
+    "talisma_silencio": {
+      "nome": "Talismã do Silêncio",
+      "raridade": "raro",
+      "valor_base": 300,
+      "descricao": "Reduz dano recebido em combate",
+      "emoji": "🔇",
+      "bonus": {
+        "reducao_dano": 0.20
+      }
+    },
+    "colar_persistencia": {
+      "nome": "Colar da Persistência",
+      "raridade": "epico",
+      "valor_base": 450,
+      "descricao": "Aumenta regeneração de vida",
+      "emoji": "⛓️",
+      "bonus": {
+        "regeneracao": 0.25
+      }
+    }
+  },
+  "loja_items": {
+    "pocao_alma": {
+      "nome": "Poção de Alma",
+      "raridade": "comum",
+      "valor": 200,
+      "descricao": "Restaura e aumenta almas",
+      "emoji": "🧪",
+      "tipo": "consumivel",
+      "efeito": "alma_boost_50"
+    },
+    "elixir_fortuna": {
+      "nome": "Elixir da Fortuna",
+      "raridade": "raro",
+      "valor": 800,
+      "descricao": "Boost temporário (+50% almas por 1h)",
+      "emoji": "🥤",
+      "tipo": "consumivel",
+      "efeito": "boost_tempo",
+      "duracao_minutos": 60,
+      "bonus_percentual": 50
+    },
+    "incenso_espiritual": {
+      "nome": "Incenso Espiritual",
+      "raridade": "raro",
+      "valor": 600,
+      "descricao": "Aumenta chance de drops em 30%",
+      "emoji": "💨",
+      "tipo": "consumivel",
+      "efeito": "boost_drop",
+      "duracao_minutos": 30,
+      "bonus_percentual": 30
+    },
+    "fragmento_sorte": {
+      "nome": "Fragmento da Sorte",
+      "raridade": "raro",
+      "valor": 500,
+      "descricao": "Aumenta drops raros temporariamente",
+      "emoji": "✨",
+      "tipo": "consumivel",
+      "efeito": "boost_raro"
+    },
+    "pergaminho_bencao": {
+      "nome": "Pergaminho de Bênção",
+      "raridade": "epico",
+      "valor": 1200,
+      "descricao": "Abençoa suas ações por 24 horas",
+      "emoji": "📜",
+      "tipo": "consumivel",
+      "efeito": "bencao_24h"
+    },
+    "essencia_restauradora": {
+      "nome": "Essência Restauradora",
+      "raridade": "epico",
+      "valor": 1000,
+      "descricao": "Restaura todos os recursos",
+      "emoji": "💚",
+      "tipo": "consumivel",
+      "efeito": "restauracao_total"
+    },
+    "caixa_comum": {
+      "nome": "Caixa Comum",
+      "raridade": "comum",
+      "valor": 250,
+      "descricao": "Contém itens de craft comuns",
+      "emoji": "📦",
+      "tipo": "lootbox",
+      "droprate": {
+        "comum": 1.0
+      }
+    },
+    "caixa_rara": {
+      "nome": "Caixa Rara",
+      "raridade": "raro",
+      "valor": 750,
+      "descricao": "Contém itens de craft raros",
+      "emoji": "📬",
+      "tipo": "lootbox",
+      "droprate": {
+        "raro": 1.0
+      }
+    },
+    "caixa_ancestral": {
+      "nome": "Caixa Ancestral",
+      "raridade": "ancestral",
+      "valor": 3000,
+      "descricao": "Tesouro antigo com itens extremos",
+      "emoji": "🎁",
+      "tipo": "lootbox",
+      "droprate": {
+        "epico": 0.5,
+        "lendario": 0.3,
+        "ancestral": 0.2
+      }
+    },
+    "caixa_vazio": {
+      "nome": "Caixa do Vazio",
+      "raridade": "ancestral",
+      "valor": 2500,
+      "descricao": "Contém mistério e poder",
+      "emoji": "⚫",
+      "tipo": "lootbox",
+      "droprate": {
+        "lendario": 0.6,
+        "ancestral": 0.4
+      }
+    },
+    "alma_corrompida": {
+      "nome": "Alma Corrompida",
+      "raridade": "ancestral",
+      "valor": 5000,
+      "descricao": "Poder corrompido e proibido",
+      "emoji": "👹",
+      "tipo": "especial",
+      "dificuldade": "MUITO DIFÍCIL"
+    },
+    "fragmento_exilium": {
+      "nome": "Fragmento do Exilium",
+      "raridade": "ancestral",
+      "valor": 4500,
+      "descricao": "Parte da dimensão proibida",
+      "emoji": "🌑",
+      "tipo": "especial",
+      "dificuldade": "MUITO DIFÍCIL"
+    },
+    "reliquia_perdida": {
+      "nome": "Relíquia Perdida",
+      "raridade": "ancestral",
+      "valor": 4200,
+      "descricao": "Tesouro de eras passadas",
+      "emoji": "🏛️",
+      "tipo": "especial",
+      "dificuldade": "MUITO DIFÍCIL"
+    },
+    "selo_criador": {
+      "nome": "Selo do Criador",
+      "raridade": "ancestral",
+      "valor": 6000,
+      "descricao": "Poder de criação e destruição",
+      "emoji": "⭐",
+      "tipo": "especial",
+      "dificuldade": "LENDÁRIO"
+    },
+    "essencia_primordial": {
+      "nome": "Essência Primordial",
+      "raridade": "ancestral",
+      "valor": 5500,
+      "descricao": "Energia do início dos tempos",
+      "emoji": "🌌",
+      "tipo": "especial",
+      "dificuldade": "LENDÁRIO"
+    }
+  },
+  "configuracoes": {
+    "taxa_imposto_mercado": 0.05,
+    "cooldown_diario_minutos": 1440,
+    "cooldown_mineracao_segundos": 300,
+    "cooldown_caca_segundos": 120,
+    "ranking_atualiza_minutos": 60
+  }
+}
 

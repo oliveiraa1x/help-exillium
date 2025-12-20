@@ -748,6 +748,30 @@ async def setup_hook():
     except Exception as e:
         print(f"Erro ao carregar cog Stay Voice: {e}")
 
+    # Carregar Loja
+    try:
+        loja = importlib.import_module("cogs.loja")
+        await loja.setup(bot)
+        print("🏪 Loja carregada com sucesso!")
+    except Exception as e:
+        print(f"Erro ao carregar cog Loja: {e}")
+
+    # Carregar Inventário
+    try:
+        inventario = importlib.import_module("cogs.inventario")
+        await inventario.setup(bot)
+        print("📦 Inventário carregado com sucesso!")
+    except Exception as e:
+        print(f"Erro ao carregar cog Inventário: {e}")
+
+    # Carregar Help
+    try:
+        help_cog = importlib.import_module("cogs.help")
+        await help_cog.setup(bot)
+        print("📚 Help carregado com sucesso!")
+    except Exception as e:
+        print(f"Erro ao carregar cog Help: {e}")
+
     update_status.start()
     
     # Sincronizar comandos
