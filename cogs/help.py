@@ -292,6 +292,42 @@ class Help(commands.Cog):
         )
         embed_voz.set_footer(text="🌙 Rede Exilium • /help")
         embeds["🎧 VOICE & CALL"] = embed_voz
+
+        # ==================== MODERAÇÃO (PREFIXO) ====================
+        embed_mod_prefix = discord.Embed(
+            title="🛡️ MODERAÇÃO (PREFIXO)",
+            description="Comandos administrativos usando o prefixo **sprt!**",
+            color=discord.Color.dark_gray()
+        )
+        embed_mod_prefix.add_field(
+            name="Comandos Gerais",
+            value="""**sprt!tempo** — Ver tempo em call
+**sprt!addcargo** — Adicionar cargo
+**sprt!removercargo** — Retirar cargo""",
+            inline=False
+        )
+        embed_mod_prefix.add_field(
+            name="Punições em Chat",
+            value="""**sprt!mute [@membro/ID] [tempo] [motivo]** — Mutar em chat
+**sprt!unmute [@membro/ID] [tempo] [motivo]** — Tirar mute em chat""",
+            inline=False
+        )
+        embed_mod_prefix.add_field(
+            name="Punições em Call",
+            value="""**sprt!mutecall [@membro/ID] [tempo] [motivo]** — Mutar em call
+**sprt!unmutecall [@membro/ID] [tempo] [motivo]** — Tirar mute em call
+**sprt!prender [@membro/ID] [tempo] [motivo]** — Prender membro
+**sprt!soltar [@membro/ID] [tempo] [motivo]** — Soltar membro""",
+            inline=False
+        )
+        embed_mod_prefix.add_field(
+            name="Permanente",
+            value="""**sprt!ban [@membro/ID] [motivo]** — Banimento
+**sprt!unban [@membro/ID] [motivo]** — Remover banimento""",
+            inline=False
+        )
+        embed_mod_prefix.set_footer(text="🌙 Rede Exilium • Moderadores")
+        embeds["🛡️ MOD (PREFIX)"] = embed_mod_prefix
         
         # ==================== RPG ====================
         embed_rpg = discord.Embed(

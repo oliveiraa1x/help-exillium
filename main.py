@@ -249,24 +249,6 @@ def ensure_top_tempo_record(user_id: int) -> tuple[dict, str]:
     return db, uid
 
 
-@bot.tree.command(name="help", description="Lista os comandos disponíveis do Help Exilium.")
-async def slash_help(interaction: discord.Interaction):
-    embed = discord.Embed(
-        title="📖 Help Exilium",
-        description="Comandos disponíveis:",
-        color=discord.Color.blurple(),
-    )
-    embed.add_field(name="👤 Perfil", value="/perfil [membro] - Mostra os detalhes do perfil", inline=False)
-    embed.add_field(name="💬 Mensagens", value="/mensagem <título> <texto> - Cria uma embed simples", inline=False)
-    embed.add_field(name="📝 Sobre Mim", value="/set-sobre <texto> - Define seu 'Sobre Mim'", inline=False)
-    embed.add_field(name="🎧 Call", value="/top-tempo - Ranking de tempo em call\n/callstatus - Seu tempo atual em call", inline=False)
-    embed.add_field(name="💰 Economia", value="/daily - Recompensa diária\n/mine - Minerar e ganhar almas\n/caça - Caça rápida (5s)\n/caça-longa - Caça longa (12h)\n/balance [membro] - Ver saldo de almas\n/top-souls - Ranking de almas\n/top-level - Ranking de níveis", inline=False)
-    embed.add_field(name="⚔️ RPG Combate", value="/combate - Inicie um combate contra um mob aleatório!", inline=False)
-    embed.add_field(name="📋 Missões", value="/missoes - Ver suas missões\n/claim-missao <número> - Reivindicar recompensa", inline=False)
-    embed.add_field(name="ℹ️ Info", value="/uptime - Tempo online do bot", inline=False)
-    await interaction.response.send_message(embed=embed, ephemeral=True)
-
-
 async def get_user_rank_call(user_id: str, interaction: discord.Interaction):
     """Calcula o ranking do usuário em tempo de call"""
     db = load_top_tempo_db()
@@ -778,8 +760,7 @@ async def setup_hook():
     await bot.tree.sync()
 
 async def main():
-    await bot.load_extension("voice_timer")
-    await bot.start("SEU_TOKEN_AQUI")
+    await bot.start(TOKEN)
 
 @bot.event
 async def on_ready():

@@ -392,64 +392,6 @@ class Loja(commands.Cog):
         
         await interaction.followup.send(embed=embed)
     
-    @app_commands.command(name="inventario", description="Veja seu inventário")
-    async def inventario(self, interaction: discord.Interaction):
-        """Mostra inventário do usuário"""
-        economia = self.load_json(self.economia_file)
-        user_inv = self.get_user_inventory(interaction.user.id)
-        
-        itens = user_inv.get("itens", {})
-        almas = user_inv.get("almas", 0)
-        
-        if not itens:
-            embed = discord.Embed(
-                title="📦 Seu Inventário",
-                description="Seu inventário está vazio",
-                color=0x9B59B6
-            )
-            embed.add_field(name="Almas", value=f"{almas}", inline=False)
-            await interaction.response.send_message(embed=embed, ephemeral=True)
-            return
-        
-        # Organizar itens por raridade
-        itens_por_raridade = {}
-        
-        # Procurar em todas as categorias
-        for categoria in ["itens_craft", "itens_forja", "itens_passivos", "loja_items"]:
-            cat_items = economia.get(categoria, {})
-            for item_id, item_data in cat_items.items():
-                if item_id in itens:
-                    raridade = item_data.get("raridade", "comum")
-                    if raridade not in itens_por_raridade:
-                        itens_por_raridade[raridade] = []
-                    
-                    emoji = item_data.get("emoji", "⭐")
-                    nome = item_data.get("nome", item_id)
-                    qtd = itens[item_id]
-                    equipado = "✅" if user_inv.get("equipados", {}).get(item_id) else ""
-                    
-                    itens_por_raridade[raridade].append(f"{emoji} **{nome}** x{qtd} {equipado}")
-        
-        embed = discord.Embed(
-            title="📦 Seu Inventário",
-            color=0x9B59B6
-        )
-        
-        ordem_raridade = ["ancestral", "lendario", "epico", "raro", "comum"]
-        
-        for raridade in ordem_raridade:
-            if raridade in itens_por_raridade:
-                items_list = "\n".join(itens_por_raridade[raridade])
-                embed.add_field(
-                    name=f"{'⭐' if raridade == 'ancestral' else '🟡' if raridade == 'lendario' else '🟣'} {raridade.upper()}",
-                    value=items_list,
-                    inline=False
-                )
-        
-        embed.add_field(name="💜 Almas", value=f"**{almas}**", inline=False)
-        
-        await interaction.response.send_message(embed=embed, ephemeral=False)
-    
     @app_commands.command(name="vender", description="Venda um item para a loja")
     @app_commands.describe(item="ID do item para vender", quantidade="Quantidade (padrão: 1)")
     async def vender(self, interaction: discord.Interaction, item: str, quantidade: int = 1):
