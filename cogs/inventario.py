@@ -156,7 +156,7 @@ class Inventario(commands.Cog):
                 color=0x9B59B6
             )
             embed.add_field(name="💜 Almas", value=f"**{almas:,}**", inline=False)
-            await interaction.response.send_message(embed=embed, ephemeral=True)
+            await interaction.response.send_message(embed=embed, ephemeral=False)
             return
         
         # Organizar itens por raridade
@@ -202,7 +202,7 @@ class Inventario(commands.Cog):
         
         embed.add_field(name="💜 Almas", value=f"**{almas:,}**", inline=False)
         
-        await interaction.response.send_message(embed=embed, ephemeral=True)
+        await interaction.response.send_message(embed=embed, ephemeral=False)
     
     @app_commands.command(name="equipar", description="Equipe um item passivo")
     @app_commands.describe(item="ID do item para equipar")

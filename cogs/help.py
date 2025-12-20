@@ -352,6 +352,123 @@ class Help(commands.Cog):
             view=view,
             ephemeral=False  # Visível para todos no chat
         )
+    
+    @app_commands.command(name="info-loja", description="Informações detalhadas sobre o sistema de loja")
+    async def info_loja(self, interaction: discord.Interaction):
+        """Mostra informações detalhadas sobre a loja"""
+        embed = discord.Embed(
+            title="🏪 Sistema de Loja",
+            description="Tudo que você precisa saber sobre compra, venda e forja",
+            color=discord.Color.from_rgb(255, 107, 157)
+        )
+        
+        embed.add_field(
+            name="📦 Items Disponíveis (34 total)",
+            value="""**Craft (9):** Materiais para crafting
+**Forja (6):** Armas lendárias (Totem, Lâmina, Punhal, Orbe, Coração, Martelo)
+**Passivos (4):** Equipáveis com bônus (Anel da Ganância 2x almas!)
+**Consumíveis (6):** Poções, elixires, pergaminhos
+**Caixas (4):** Comum, Rara, Ancestral, Vazio
+**Especiais (5):** Alma Corrompida, Fragmento, Relíquia, Selo, Essência""",
+            inline=False
+        )
+        
+        embed.add_field(
+            name="💎 Raridades & Valores",
+            value="""⚪ **Comum** → 1.0x
+🔵 **Raro** → 2.5x
+🟣 **Épico** → 5.0x
+🟡 **Lendário** → 10.0x
+🔴 **Ancestral** → 20.0x
+
+*Multiplicadores aplicados ao valor base*""",
+            inline=False
+        )
+        
+        embed.add_field(
+            name="⚒️ Sistema de Forja",
+            value="""**Taxa de Falha por arma:**
+• 🔷 Totem do Vazio: 12%
+• ⚔️ Lâmina Sombria: 15%
+• 🗡️ Punhal Ancilar: 18%
+• 💎 Orbe Cósmica: 20%
+• ❤️ Coração Escuro: 22%
+• 🔨 Martelo Aniquilador: 25%
+
+**Se falhar:** Perde TUDO (almas + ingredientes)
+**Se suceder:** Item valioso (até 70.000 almas)""",
+            inline=False
+        )
+        
+        embed.add_field(
+            name="💰 Economia Balanceada",
+            value="""✅ Venda com penalidade (70% retorno)
+✅ Taxa de falha controla inflação
+✅ Custo duplo (almas + materiais)
+✅ Sem farm infinito
+✅ Progresso controlado e satisfatório""",
+            inline=False
+        )
+        
+        embed.add_field(
+            name="🎯 Comandos Relacionados",
+            value="`/loja` - Acessar a loja\n`/comprar` - Comprar itens\n`/vender` - Vender itens\n`/forjar` - Forjar armas\n`/craft` - Craftar itens",
+            inline=False
+        )
+        
+        embed.set_footer(text="🌙 Rede Exilium • Sistema de Economia")
+        await interaction.response.send_message(embed=embed, ephemeral=False)
+    
+    @app_commands.command(name="info-raridade", description="Informações detalhadas sobre sistema de raridades")
+    async def info_raridade(self, interaction: discord.Interaction):
+        """Mostra informações sobre raridades"""
+        embed = discord.Embed(
+            title="💎 Sistema de Raridades",
+            description="Como as raridades afetam o valor dos items",
+            color=discord.Color.gold()
+        )
+        
+        raridades = [
+            ("⚪ **COMUM**", "1.0x", "Fácil de conseguir, baixo valor", "Itens básicos, loot comum"),
+            ("🔵 **RARO**", "2.5x", "Materiais básicos de crafting", "2.5x mais valioso que comum"),
+            ("🟣 **ÉPICO**", "5.0x", "Componentes importantes", "5.0x mais valioso que comum"),
+            ("🟡 **LENDÁRIO**", "10.0x", "Armas poderosas", "10.0x mais valioso que comum"),
+            ("🔴 **ANCESTRAL**", "20.0x", "Itens extremos, muito raros", "20.0x mais valioso que comum")
+        ]
+        
+        for nome, mult, desc, info in raridades:
+            embed.add_field(
+                name=f"{nome} - {mult}",
+                value=f"**Descrição:** {desc}\n**Info:** {info}",
+                inline=False
+            )
+        
+        embed.add_field(
+            name="📊 Exemplo de Cálculo",
+            value="""**Cenário:** Item base de 100 almas, raridade Épico
+
+Valor final = 100 × 5.0 = **500 almas**
+
+**Ao comprar:** Custa 500 almas na loja
+
+**Ao vender (70% retorno):**
+500 × 0.7 = **350 almas recebidos**
+
+**Perda na venda:** 150 almas (30%)""",
+            inline=False
+        )
+        
+        embed.add_field(
+            name="🎯 Dicas",
+            value="""💡 Itens Ancestrais são raríssimos e muito valiosos
+💡 Vender items com penalidade não compensa - prefira craftar
+💡 Forjar armas de raridade alta é muito arriscado
+💡 Organize seu inventário por raridade para mais organização""",
+            inline=False
+        )
+        
+        embed.set_footer(text="🌙 Rede Exilium • Sistema de Raridades")
+        await interaction.response.send_message(embed=embed, ephemeral=False)
 
 async def setup(bot):
     await bot.add_cog(Help(bot))

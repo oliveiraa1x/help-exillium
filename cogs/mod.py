@@ -73,29 +73,6 @@ class Moderation(commands.Cog):
         else:
             await ctx.send(f"❌ {member.display_name} não está em call")
 
-    @commands.command(name="help")
-    @commands.has_permissions(manage_guild=True)
-    async def cmd_help(self, ctx: commands.Context):
-        """sprt!help - Lista de comandos de moderação com uso e permissões necessárias."""
-        embed = discord.Embed(
-            title="🛡️ Painel de Moderação — Comandos (prefixo `sprt!`)",
-            color=discord.Color.blurple()
-        )
-        embed.add_field(name="`sprt!tempo [@membro]`", value="Mostra tempo em call do membro (ou autor).", inline=False)
-        embed.add_field(name="`sprt!addcargo @membro @cargo [tempo]`", value="Adiciona um cargo existente; opcionalmente remove após duração (s/m/h/d).", inline=False)
-        embed.add_field(name="`sprt!removercargo @membro @cargo`", value="Remove um cargo existente do membro.", inline=False)
-        embed.add_field(name="`sprt!criarcargo @membro NomeDoCargo`", value="Cria um cargo (se não existir) e adiciona ao membro.", inline=False)
-        embed.add_field(name="`sprt!deletecargo @membro @cargo|Nome`", value="Remove cargo do membro; se ficar vazio, deleta o cargo.", inline=False)
-        # Nota: comandos de mute em chat foram removidos — use moderação manualmente
-        embed.add_field(name="`sprt!mutecall @membro [tempo] [motivo]`", value="Mute em voice (requer permissão de Mute Members).", inline=False)
-        embed.add_field(name="`sprt!unmutecall @membro`", value="Desmuta em voice.", inline=False)
-        embed.add_field(name="`sprt!prender @membro [tempo] [motivo]`", value="Move para canal 'Prisão' e muta/deafen (requer Move Members).", inline=False)
-        embed.add_field(name="`sprt!soltar @membro`", value="Desmuta/deaf do membro e libera.", inline=False)
-        embed.add_field(name="`sprt!ban @membro [motivo]`", value="Bane permanentemente o membro (requer Ban Members).", inline=False)
-        embed.add_field(name="`sprt!unban <user_id> [motivo]`", value="Remove ban pelo ID do usuário.", inline=False)
-        embed.set_footer(text="Use com responsabilidade — requer permissões administrativas.")
-        await ctx.send(embed=embed)
-
     @commands.command(name="addcargo")
     @commands.has_permissions(manage_roles=True)
     async def cmd_addcargo(self, ctx, member: discord.Member, role: discord.Role, duration: Optional[str] = None):

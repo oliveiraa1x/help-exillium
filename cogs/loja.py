@@ -448,7 +448,7 @@ class Loja(commands.Cog):
         
         embed.add_field(name="💜 Almas", value=f"**{almas}**", inline=False)
         
-        await interaction.response.send_message(embed=embed, ephemeral=True)
+        await interaction.response.send_message(embed=embed, ephemeral=False)
     
     @app_commands.command(name="vender", description="Venda um item para a loja")
     @app_commands.describe(item="ID do item para vender", quantidade="Quantidade (padrão: 1)")
@@ -527,7 +527,7 @@ Este será um sistema onde você pode:
         )
         embed.set_footer(text="Volte em breve!")
         
-        await interaction.response.send_message(embed=embed, ephemeral=True)
+        await interaction.response.send_message(embed=embed, ephemeral=False)
     
     @app_commands.command(name="ranking", description="Veja o ranking de almas")
     async def ranking(self, interaction: discord.Interaction):
